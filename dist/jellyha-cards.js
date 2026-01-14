@@ -22,14 +22,14 @@ let he = class {
     return this.cssText;
   }
 };
-const me = (t) => new he(typeof t == "string" ? t : t + "", void 0, X), de = (t, ...e) => {
+const _e = (t) => new he(typeof t == "string" ? t : t + "", void 0, X), de = (t, ...e) => {
   const i = t.length === 1 ? t[0] : e.reduce((s, o, a) => s + ((n) => {
     if (n._$cssResult$ === !0) return n.cssText;
     if (typeof n == "number") return n;
     throw Error("Value passed to 'css' function must be a 'css' function result: " + n + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
   })(o) + t[a + 1], t[0]);
   return new he(i, t, X);
-}, _e = (t, e) => {
+}, me = (t, e) => {
   if (W) t.adoptedStyleSheets = e.map((i) => i instanceof CSSStyleSheet ? i : i.styleSheet);
   else for (const i of e) {
     const s = document.createElement("style"), o = O.litNonce;
@@ -38,7 +38,7 @@ const me = (t) => new he(typeof t == "string" ? t : t + "", void 0, X), de = (t,
 }, Z = W ? (t) => t : (t) => t instanceof CSSStyleSheet ? ((e) => {
   let i = "";
   for (const s of e.cssRules) i += s.cssText;
-  return me(i);
+  return _e(i);
 })(t) : t;
 /**
  * @license
@@ -156,7 +156,7 @@ let b = class extends HTMLElement {
   }
   createRenderRoot() {
     const e = this.shadowRoot ?? this.attachShadow(this.constructor.shadowRootOptions);
-    return _e(e, this.constructor.elementStyles), e;
+    return me(e, this.constructor.elementStyles), e;
   }
   connectedCallback() {
     this.renderRoot ??= this.createRenderRoot(), this.enableUpdating(!0), this._$EO?.forEach((e) => e.hostConnected?.());
@@ -262,7 +262,7 @@ b.elementStyles = [], b.shadowRootOptions = { mode: "open" }, b[E("elementProper
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const q = globalThis, te = (t) => t, R = q.trustedTypes, ie = R ? R.createPolicy("lit-html", { createHTML: (t) => t }) : void 0, ce = "$lit$", _ = `lit$${Math.random().toFixed(9).slice(2)}$`, pe = "?" + _, Ae = `<${pe}>`, y = document, k = () => y.createComment(""), j = (t) => t === null || typeof t != "object" && typeof t != "function", V = Array.isArray, Pe = (t) => V(t) || typeof t?.[Symbol.iterator] == "function", H = `[ 	
+const q = globalThis, te = (t) => t, R = q.trustedTypes, ie = R ? R.createPolicy("lit-html", { createHTML: (t) => t }) : void 0, ce = "$lit$", m = `lit$${Math.random().toFixed(9).slice(2)}$`, pe = "?" + m, Ae = `<${pe}>`, y = document, k = () => y.createComment(""), j = (t) => t === null || typeof t != "object" && typeof t != "function", V = Array.isArray, Pe = (t) => V(t) || typeof t?.[Symbol.iterator] == "function", H = `[ 	
 \f\r]`, P = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, se = /-->/g, oe = />/g, v = RegExp(`>|${H}(?:([^\\s"'>=/]+)(${H}*=${H}*(?:[^ 	
 \f\r"'\`<>=]|("|')|))|$)`, "g"), ae = /'/g, ne = /"/g, ge = /^(?:script|style|textarea|title)$/i, Ee = (t) => (e, ...i) => ({ _$litType$: t, strings: e, values: i }), l = Ee(1), C = Symbol.for("lit-noChange"), r = Symbol.for("lit-nothing"), re = /* @__PURE__ */ new WeakMap(), w = y.createTreeWalker(y, 129);
 function ue(t, e) {
@@ -276,8 +276,8 @@ const ke = (t, e) => {
     const d = t[h];
     let c, p, g = -1, u = 0;
     for (; u < d.length && (n.lastIndex = u, p = n.exec(d), p !== null); ) u = n.lastIndex, n === P ? p[1] === "!--" ? n = se : p[1] !== void 0 ? n = oe : p[2] !== void 0 ? (ge.test(p[2]) && (o = RegExp("</" + p[2], "g")), n = v) : p[3] !== void 0 && (n = v) : n === v ? p[0] === ">" ? (n = o ?? P, g = -1) : p[1] === void 0 ? g = -2 : (g = n.lastIndex - p[2].length, c = p[1], n = p[3] === void 0 ? v : p[3] === '"' ? ne : ae) : n === ne || n === ae ? n = v : n === se || n === oe ? n = P : (n = v, o = void 0);
-    const m = n === v && t[h + 1].startsWith("/>") ? " " : "";
-    a += n === P ? d + Ae : g >= 0 ? (s.push(c), d.slice(0, g) + ce + d.slice(g) + _ + m) : d + _ + (g === -2 ? h : m);
+    const _ = n === v && t[h + 1].startsWith("/>") ? " " : "";
+    a += n === P ? d + Ae : g >= 0 ? (s.push(c), d.slice(0, g) + ce + d.slice(g) + m + _) : d + m + (g === -2 ? h : _);
   }
   return [ue(t, a + (t[i] || "<?>") + (e === 2 ? "</svg>" : e === 3 ? "</math>" : "")), s];
 };
@@ -294,21 +294,21 @@ class M {
     for (; (o = w.nextNode()) !== null && d.length < h; ) {
       if (o.nodeType === 1) {
         if (o.hasAttributes()) for (const g of o.getAttributeNames()) if (g.endsWith(ce)) {
-          const u = p[n++], m = o.getAttribute(g).split(_), I = /([.?@])?(.*)/.exec(u);
-          d.push({ type: 1, index: a, name: I[2], strings: m, ctor: I[1] === "." ? Me : I[1] === "?" ? Te : I[1] === "@" ? ze : U }), o.removeAttribute(g);
-        } else g.startsWith(_) && (d.push({ type: 6, index: a }), o.removeAttribute(g));
+          const u = p[n++], _ = o.getAttribute(g).split(m), I = /([.?@])?(.*)/.exec(u);
+          d.push({ type: 1, index: a, name: I[2], strings: _, ctor: I[1] === "." ? Me : I[1] === "?" ? Te : I[1] === "@" ? ze : U }), o.removeAttribute(g);
+        } else g.startsWith(m) && (d.push({ type: 6, index: a }), o.removeAttribute(g));
         if (ge.test(o.tagName)) {
-          const g = o.textContent.split(_), u = g.length - 1;
+          const g = o.textContent.split(m), u = g.length - 1;
           if (u > 0) {
             o.textContent = R ? R.emptyScript : "";
-            for (let m = 0; m < u; m++) o.append(g[m], k()), w.nextNode(), d.push({ type: 2, index: ++a });
+            for (let _ = 0; _ < u; _++) o.append(g[_], k()), w.nextNode(), d.push({ type: 2, index: ++a });
             o.append(g[u], k());
           }
         }
       } else if (o.nodeType === 8) if (o.data === pe) d.push({ type: 2, index: a });
       else {
         let g = -1;
-        for (; (g = o.data.indexOf(_, g + 1)) !== -1; ) d.push({ type: 7, index: a }), g += _.length - 1;
+        for (; (g = o.data.indexOf(m, g + 1)) !== -1; ) d.push({ type: 7, index: a }), g += m.length - 1;
       }
       a++;
     }
@@ -2013,7 +2013,7 @@ let f = class extends x {
    */
   static getStubConfig() {
     return {
-      entity: "",
+      entity: "sensor.jellyha_library",
       ...le
     };
   }

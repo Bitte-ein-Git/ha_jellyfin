@@ -22,25 +22,40 @@ A Home Assistant integration and Lovelace card that displays media from your Jel
 
 ## Installation
 
-### HACS (Recommended)
+JellyHA requires **two installation steps**: installing the integration and adding the dashboard card resource.
+
+### Step 1: Install the Integration
+
+#### Via HACS (Recommended)
 
 1. Open HACS in Home Assistant
-2. Go to "Integrations" → "⋮" → "Custom repositories"
-3. Add this repository URL
-4. Click "Download"
-5. Restart Home Assistant
+2. Go to **Integrations** → **⋮** → **Custom repositories**
+3. Add repository URL: `https://github.com/zupancicmarko/JellyHA`
+4. Select Type: **Integration**
+5. Click **ADD**
+6. Search for **JellyHA** in HACS Integrations
+7. Click **Download**
+8. **Restart Home Assistant**
 
-### Manual Installation
+#### Manual Installation
 
 1. Copy `custom_components/jellyha` to your `config/custom_components/` directory
-2. Copy `dist/jellyha-cards.js` to `config/www/community/jellyha/`
-3. Add the card as a resource in Lovelace:
-   ```yaml
-   resources:
-     - url: /local/community/jellyha/jellyha-cards.js
-       type: module
-   ```
-4. Restart Home Assistant
+2. **Restart Home Assistant**
+
+### Step 2: Add Dashboard Card Resource
+
+> **⚠️ Important:** This step is **required** even if you installed via HACS. The dashboard card will not work without it.
+
+1. Go to **Settings** → **Dashboards**
+2. Click **⋮** (three-dot menu) → **Resources**
+3. Click **+ Add Resource**
+4. Enter the URL based on your installation method:
+   - **HACS:** `/hacsfiles/jellyha/jellyha-cards.js`
+   - **Manual:** `/local/community/jellyha/jellyha-cards.js` (ensure you copied `dist/jellyha-cards.js` to `config/www/community/jellyha/`)
+5. Select Resource type: **JavaScript Module**
+6. Click **Create**
+
+> **Note:** If you don't see the Resources menu, enable **Advanced Mode** in your user profile settings.
 
 ## Setup
 

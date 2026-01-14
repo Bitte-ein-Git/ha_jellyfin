@@ -398,7 +398,7 @@ export class JellyHALibraryCard extends LitElement {
    */
   public static getStubConfig(): Partial<JellyHALibraryCardConfig> {
     return {
-      entity: '',
+      entity: 'sensor.jellyha_library',
       ...DEFAULT_CONFIG,
     };
   }
