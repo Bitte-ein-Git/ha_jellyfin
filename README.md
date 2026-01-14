@@ -102,9 +102,6 @@ max_pages: 5
 | `metadata_position` | string | `below` | Position of text: `below` or `above` image |
 | `new_badge_days` | number | `3` | Items added within X days show "New" badge |
 | `click_action` | string | `jellyfin` | Action on click: `jellyfin`, `more-info`, or `none` |
-| `image_quality` | number | `90` | Image quality percentage (0-100) |
-| `image_height` | number | `300` | Maximum height of poster images in pixels |
-| `theme` | string | `auto` | Color theme: `auto`, `light`, or `dark` |
 
 ## API Key
 
