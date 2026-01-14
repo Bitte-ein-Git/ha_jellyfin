@@ -7,7 +7,7 @@ A Home Assistant integration and Lovelace card that displays media from your Jel
 
 **JellyHA Library** provides a beautiful way to showcase your media collection in Home Assistant.
 
-![Card Preview](./docs/preview.png)
+![Card Preview](./docs/JellyHA-Library.png)
 
 ## Features
 
