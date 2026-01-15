@@ -30,7 +30,9 @@ export class JellyHALibraryEditor extends LitElement {
       margin-bottom: 16px;
     }
     .form-row ha-textfield,
-    .form-row ha-select {
+    .form-row ha-select,
+    .form-row ha-entity-picker,
+    .form-row ha-selector {
       width: 100%;
     }
     .checkbox-row {
@@ -50,17 +52,19 @@ export class JellyHALibraryEditor extends LitElement {
       return html``;
     }
 
+    const clickAction = this._config.click_action || 'jellyfin';
+    const holdAction = this._config.hold_action || 'cast';
+
     return html`
       <div class="card-config">
         <div class="form-row">
-          <ha-entity-picker
+          <ha-selector
             .hass=${this.hass}
+            .selector=${{ entity: { domain: 'sensor' } }}
             .value=${this._config.entity}
-            .label=${'Entity (required)'}
-            .includeDomains=${['sensor']}
+            label="Entity (required)"
             @value-changed=${this._entityChanged}
-            allow-custom-entity
-          ></ha-entity-picker>
+          ></ha-selector>
         </div>
 
         <div class="form-row">
@@ -158,110 +162,145 @@ export class JellyHALibraryEditor extends LitElement {
         <div class="form-row">
           <ha-select
             label="Click Action"
-            .value=${this._config.click_action || 'jellyfin'}
+            .value=${clickAction}
             @selected=${this._clickActionChanged}
             @closed=${(e: Event) => e.stopPropagation()}
           >
             <mwc-list-item value="jellyfin">Open in Jellyfin</mwc-list-item>
+            <mwc-list-item value="cast">Cast to Device</mwc-list-item>
             <mwc-list-item value="more-info">Show More Info</mwc-list-item>
             <mwc-list-item value="none">No Action</mwc-list-item>
           </ha-select>
         </div>
 
-        <div class="checkbox-row">
-          <ha-switch
-            .checked=${this._config.show_title !== false}
-            @change=${this._showTitleChanged}
-          ></ha-switch>
-          <span>Show Title</span>
-        </div>
-
-        <div class="checkbox-row">
-          <ha-switch
-            .checked=${this._config.show_year !== false}
-            @change=${this._showYearChanged}
-          ></ha-switch>
-          <span>Show Year</span>
-        </div>
-
-        <div class="checkbox-row">
-          <ha-switch
-            .checked=${this._config.show_date_added === true}
-            @change=${this._showDateAddedChanged}
-          ></ha-switch>
-          <span>Show Date Added</span>
-        </div>
-
-        <div class="checkbox-row">
-          <ha-switch
-            .checked=${this._config.show_ratings !== false}
-            @change=${this._showRatingsChanged}
-          ></ha-switch>
-          <span>Show Ratings</span>
-        </div>
-
-        <div class="checkbox-row">
-          <ha-switch
-            .checked=${this._config.show_runtime === true}
-            @change=${this._showRuntimeChanged}
-          ></ha-switch>
-          <span>Show Runtime</span>
-        </div>
-
-        <div class="checkbox-row">
-          <ha-switch
-            .checked=${this._config.show_media_type_badge !== false}
-            @change=${this._showMediaTypeBadgeChanged}
-          ></ha-switch>
-          <span>Show Media Type Badge (Movie/Series)</span>
-        </div>
-
-        <div class="checkbox-row">
-          <ha-switch
-            .checked=${this._config.show_watched_status !== false}
-            @change=${this._showWatchedStatusChanged}
-          ></ha-switch>
-          <span>Show Watched Status</span>
-        </div>
-
-        <div class="checkbox-row">
-          <ha-switch
-            .checked=${this._config.show_genres === true}
-            @change=${this._showGenresChanged}
-          ></ha-switch>
-          <span>Show Genres</span>
-        </div>
-
-        <div class="checkbox-row">
-          <ha-switch
-            .checked=${this._config.show_description_on_hover !== false}
-            @change=${this._showDescriptionOnHoverChanged}
-          ></ha-switch>
-          <span>Show Description</span>
-        </div>
-        </div>
-
         <div class="form-row">
           <ha-select
-            label="Metadata Position"
-            .value=${this._config.metadata_position || 'below'}
-            @selected=${this._metadataPositionChanged}
+            label="Hold (Long Press) Action"
+            .value=${holdAction}
+            @selected=${this._holdActionChanged}
             @closed=${(e: Event) => e.stopPropagation()}
           >
-            <mwc-list-item value="below">Below</mwc-list-item>
-            <mwc-list-item value="above">Above</mwc-list-item>
+            <mwc-list-item value="jellyfin">Open in Jellyfin</mwc-list-item>
+            <mwc-list-item value="cast">Cast to Device</mwc-list-item>
+            <mwc-list-item value="more-info">Show More Info</mwc-list-item>
+            <mwc-list-item value="none">No Action</mwc-list-item>
           </ha-select>
         </div>
 
-        <div class="checkbox-row">
-          <ha-switch
-            .checked=${this._config.show_pagination !== false}
-            @change=${this._showPaginationChanged}
-          ></ha-switch>
-          <span>Show Pagination Dots</span>
-        </div>
-      </div>
-    `;
+        ${clickAction === 'cast' || holdAction === 'cast'
+        ? html`
+              <div class="form-row">
+                <ha-selector
+                  .hass=${this.hass}
+                  .selector=${{ entity: { domain: 'media_player' } }}
+                  .value=${this._config.default_cast_device}
+                  label="Default Cast Device"
+                  @value-changed=${this._defaultCastDeviceChanged}
+                ></ha-selector>
+              </div>
+              <div class="checkbox-row">
+                <ha-switch
+                  .checked=${this._config.show_now_playing !== false}
+                  @change=${this._showNowPlayingChanged}
+                ></ha-switch>
+                <span>Show "Now Playing" Overlay on Posters</span>
+              </div>
+            `
+        : ''}
+
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.show_title !== false}
+        @change=${this._showTitleChanged}
+      ></ha-switch>
+      <span>Show Title</span>
+    </div>
+
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.show_year !== false}
+        @change=${this._showYearChanged}
+      ></ha-switch>
+      <span>Show Year</span>
+    </div>
+
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.show_date_added === true}
+        @change=${this._showDateAddedChanged}
+      ></ha-switch>
+      <span>Show Date Added</span>
+    </div>
+
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.show_ratings !== false}
+        @change=${this._showRatingsChanged}
+      ></ha-switch>
+      <span>Show Ratings</span>
+    </div>
+
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.show_runtime === true}
+        @change=${this._showRuntimeChanged}
+      ></ha-switch>
+      <span>Show Runtime</span>
+    </div>
+
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.show_media_type_badge !== false}
+        @change=${this._showMediaTypeBadgeChanged}
+      ></ha-switch>
+      <span>Show Media Type Badge (Movie/Series)</span>
+    </div>
+
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.show_watched_status !== false}
+        @change=${this._showWatchedStatusChanged}
+      ></ha-switch>
+      <span>Show Watched Status</span>
+    </div>
+
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.show_genres === true}
+        @change=${this._showGenresChanged}
+      ></ha-switch>
+      <span>Show Genres</span>
+    </div>
+
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.show_description_on_hover !== false}
+        @change=${this._showDescriptionOnHoverChanged}
+      ></ha-switch>
+      <span>Show Description</span>
+    </div>
+
+    <div class="form-row">
+      <ha-select
+        label="Metadata Position"
+        .value=${this._config.metadata_position || 'below'}
+        @selected=${this._metadataPositionChanged}
+        @closed=${(e: Event) => e.stopPropagation()}
+      >
+        <mwc-list-item value="below">Below</mwc-list-item>
+        <mwc-list-item value="above">Above</mwc-list-item>
+      </ha-select>
+    </div>
+
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.show_pagination !== false}
+        @change=${this._showPaginationChanged}
+      ></ha-switch>
+      <span>Show Pagination Dots</span>
+    </div>
+  </div>
+`;
   }
 
   private _entityChanged(e: CustomEvent): void {
@@ -314,6 +353,20 @@ export class JellyHALibraryEditor extends LitElement {
   private _clickActionChanged(e: Event): void {
     const target = e.target as HTMLSelectElement;
     this._updateConfig('click_action', target.value);
+  }
+
+  private _holdActionChanged(e: Event): void {
+    const target = e.target as HTMLSelectElement;
+    this._updateConfig('hold_action', target.value);
+  }
+
+  private _defaultCastDeviceChanged(e: CustomEvent): void {
+    this._updateConfig('default_cast_device', e.detail.value);
+  }
+
+  private _showNowPlayingChanged(e: Event): void {
+    const target = e.target as HTMLInputElement;
+    this._updateConfig('show_now_playing', target.checked);
   }
 
   private _showTitleChanged(e: Event): void {

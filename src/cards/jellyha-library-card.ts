@@ -51,11 +51,12 @@ const DEFAULT_CONFIG: Partial<JellyHALibraryCardConfig> = {
   metadata_position: 'below',
   rating_source: 'auto',
   new_badge_days: 3,
-  click_action: 'jellyfin',
-  image_quality: 90,
-  image_height: 300,
   theme: 'auto',
   show_watched_status: true,
+  click_action: 'jellyfin',
+  hold_action: 'cast',
+  default_cast_device: '',
+  show_now_playing: true,
 };
 
 // Helper function to fire events (replaces custom-card-helpers)
@@ -78,6 +79,12 @@ export class JellyHALibraryCard extends LitElement {
   @state() private _config!: JellyHALibraryCardConfig;
   @state() private _currentPage = 0;
   @state() private _itemsPerPage = 5;
+  @state() private _error?: string;
+  @state() private _pressStartTime: number = 0;
+  @state() private _holdTimer?: number;
+  @state() private _isHoldActive: boolean = false;
+  private _touchStartX: number = 0;
+  private _touchStartY: number = 0;
 
   private _resizeObserver?: ResizeObserver;
   private _resizeHandler?: () => void;
@@ -87,9 +94,6 @@ export class JellyHALibraryCard extends LitElement {
   private _autoSwipeTimer?: number;
   private _effectiveListColumns = 1; // Calculated based on container width
 
-  // Touch/swipe state
-  private _touchStartX = 0;
-  private _touchStartY = 0;
   private _isSwiping = false;
 
   // Scroll indicator state (for non-paginated scrollable content)
@@ -434,6 +438,15 @@ export class JellyHALibraryCard extends LitElement {
       if (oldHass) {
         const oldState = oldHass.states[this._config.entity];
         const newState = this.hass.states[this._config.entity];
+
+        // Also check default cast device state
+        const castEntity = this._config.default_cast_device;
+        if (castEntity) {
+          const oldCastState = oldHass.states[castEntity];
+          const newCastState = this.hass.states[castEntity];
+          if (oldCastState !== newCastState) return true;
+        }
+
         return oldState !== newState;
       }
     }
@@ -706,7 +719,10 @@ export class JellyHALibraryCard extends LitElement {
         tabindex="0"
         role="button"
         aria-label="${item.name}"
-        @click="${() => this._handleClick(item)}"
+        @mousedown="${(e: MouseEvent) => this._handleMouseDown(e, item)}"
+        @mouseup="${(e: MouseEvent) => this._handleMouseUp(e, item)}"
+        @touchstart="${(e: TouchEvent) => this._handleTouchStartItem(e, item)}"
+        @touchend="${(e: TouchEvent) => this._handleTouchEndItem(e, item)}"
         @keydown="${(e: KeyboardEvent) => this._handleKeydown(e, item)}"
       >
         <div class="list-poster-wrapper">
@@ -726,6 +742,7 @@ export class JellyHALibraryCard extends LitElement {
               <div class="poster-skeleton"></div>
               
               ${this._renderStatusBadge(item, isNew)}
+              ${this._renderNowPlayingOverlay(item)}
             </div>
           </div>
           ${this._config.metadata_position !== 'above' && this._config.show_date_added && item.date_added
@@ -812,7 +829,6 @@ export class JellyHALibraryCard extends LitElement {
     const isNew = this._isNewItem(item);
     const rating = this._getRating(item);
     const showMediaTypeBadge = this._config.show_media_type_badge !== false;
-    const showHoverOverlay = this._config.show_description_on_hover !== false;
 
     return html`
       <div
@@ -820,7 +836,10 @@ export class JellyHALibraryCard extends LitElement {
         tabindex="0"
         role="button"
         aria-label="${item.name}"
-        @click="${() => this._handleClick(item)}"
+        @mousedown="${(e: MouseEvent) => this._handleMouseDown(e, item)}"
+        @mouseup="${(e: MouseEvent) => this._handleMouseUp(e, item)}"
+        @touchstart="${(e: TouchEvent) => this._handleTouchStartItem(e, item)}"
+        @touchend="${(e: TouchEvent) => this._handleTouchEndItem(e, item)}"
         @keydown="${(e: KeyboardEvent) => this._handleKeydown(e, item)}"
       >
         ${this._config.metadata_position === 'above'
@@ -838,7 +857,7 @@ export class JellyHALibraryCard extends LitElement {
               </div>
             `
         : nothing}
-        <div class="poster-container">
+        <div class="poster-container" id="poster-${item.id}">
           <div class="poster-inner">
             <img
               class="poster"
@@ -885,7 +904,9 @@ export class JellyHALibraryCard extends LitElement {
                     ${this._config.show_description_on_hover !== false && item.description
         ? html`<p class="overlay-description">${item.description}</p>`
         : nothing}
-                  </div>
+            </div>
+
+            ${this._renderNowPlayingOverlay(item)}
           </div>
         </div>
         
@@ -963,12 +984,105 @@ export class JellyHALibraryCard extends LitElement {
   }
 
   /**
-   * Handle click on media item
+   * Start hold timer
    */
-  private _handleClick(item: MediaItem): void {
-    switch (this._config.click_action) {
+  private _startHoldTimer(item: MediaItem): void {
+    this._pressStartTime = Date.now();
+    this._isHoldActive = false;
+    this._holdTimer = window.setTimeout(() => {
+      this._isHoldActive = true;
+      this._performAction(item, 'hold');
+    }, 500); // 500ms for long press
+  }
+
+  /**
+   * Clear hold timer
+   */
+  private _clearHoldTimer(): void {
+    if (this._holdTimer) {
+      clearTimeout(this._holdTimer);
+      this._holdTimer = undefined;
+    }
+  }
+
+  /**
+   * Handle mouse down on media item
+   */
+  private _handleMouseDown(e: MouseEvent, item: MediaItem): void {
+    if (e.button !== 0) return; // Only left click
+    this._startHoldTimer(item);
+  }
+
+  /**
+   * Handle mouse up on media item
+   */
+  private _handleMouseUp(e: MouseEvent, item: MediaItem): void {
+    if (this._isHoldActive) {
+      e.preventDefault();
+      e.stopPropagation();
+    } else {
+      const duration = Date.now() - this._pressStartTime;
+      if (duration < 500) {
+        this._performAction(item, 'click');
+      }
+    }
+    this._clearHoldTimer();
+  }
+
+  /**
+   * Handle touch start on media item
+   */
+  private _handleTouchStartItem(e: TouchEvent, item: MediaItem): void {
+    if (e.touches.length > 0) {
+      this._touchStartX = e.touches[0].clientX;
+      this._touchStartY = e.touches[0].clientY;
+    }
+    this._startHoldTimer(item);
+  }
+
+  private _handleTouchEndItem(e: TouchEvent, item: MediaItem): void {
+    if (this._holdTimer) {
+      clearTimeout(this._holdTimer);
+      this._holdTimer = undefined;
+    }
+
+    // Calculate movement distance
+    let dist = 0;
+    if (e.changedTouches.length > 0) {
+      const diffX = e.changedTouches[0].clientX - this._touchStartX;
+      const diffY = e.changedTouches[0].clientY - this._touchStartY;
+      dist = Math.sqrt(diffX * diffX + diffY * diffY);
+    }
+
+    e.preventDefault(); // Prevent ghost clicks
+
+    // If long press triggered, do nothing (action already performed)
+    if (this._isHoldActive) {
+      this._isHoldActive = false;
+      return;
+    }
+
+    // If moved significantly, treat as scroll/swipe and ignore
+    if (dist > 10) {
+      return;
+    }
+
+    // Otherwise, it's a short press
+    this._performAction(item, 'click');
+  }
+
+  /**
+   * Perform configured action
+   */
+  private _performAction(item: MediaItem, type: 'click' | 'hold'): void {
+    const action = type === 'click' ? this._config.click_action : this._config.hold_action;
+
+    switch (action) {
       case 'jellyfin':
         window.open(item.jellyfin_url, '_blank');
+        break;
+      case 'cast':
+        this._castMedia(item);
         break;
       case 'more-info':
         fireEvent(this as unknown as EventTarget, 'hass-more-info', {
@@ -982,12 +1096,41 @@ export class JellyHALibraryCard extends LitElement {
   }
 
   /**
+   * Cast media to default device
+   */
+  private async _castMedia(item: MediaItem): Promise<void> {
+    const entityId = this._config.default_cast_device;
+    if (!entityId) {
+      // If no default device, show more-info of the card to let user know or just log error
+      console.warn('JellyHA: No default cast device configured');
+      return;
+    }
+
+    try {
+      await this.hass.callService('jellyha', 'play_on_device', {
+        entity_id: entityId,
+        item_id: item.id,
+      });
+    } catch (err) {
+      console.error('JellyHA: Failed to cast media', err);
+    }
+  }
+
+  /**
+   * Handle click on media item (for accessibility)
+   */
+  private _handleClick(item: MediaItem): void {
+    // If not using mouse/touch events (e.g. keyboard), perform default click action
+    this._performAction(item, 'click');
+  }
+
+  /**
    * Handle keyboard navigation
    */
   private _handleKeydown(e: KeyboardEvent, item: MediaItem): void {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      this._handleClick(item);
+      this._performAction(item, 'click');
     }
   }
 
@@ -1005,6 +1148,63 @@ export class JellyHALibraryCard extends LitElement {
   private _handleImageError(e: Event): void {
     const img = e.target as HTMLImageElement;
     img.style.display = 'none';
+  }
+
+  /**
+   * Render Now Playing overlay if item matches currently playing media
+   */
+  private _renderNowPlayingOverlay(item: MediaItem): TemplateResult | typeof nothing {
+    if (!this._config.show_now_playing || !this._config.default_cast_device) {
+      return nothing;
+    }
+
+    const player = this.hass.states[this._config.default_cast_device];
+    if (!player || (player.state !== 'playing' && player.state !== 'paused')) {
+      return nothing;
+    }
+
+    // Correlate by title or series title
+    const playingTitle = player.attributes.media_title as string;
+    const playingSeries = player.attributes.media_series_title as string;
+
+    const isMatching =
+      (item.name && (playingTitle === item.name || playingSeries === item.name)) ||
+      (item.type === 'Series' && playingSeries === item.name);
+
+    if (!isMatching) {
+      return nothing;
+    }
+
+    return html`
+      <div class="now-playing-overlay" @click="${(e: Event) => e.stopPropagation()}">
+        <span class="now-playing-status">${player.state}</span>
+        <div class="now-playing-controls">
+          <ha-icon
+            icon="${player.state === 'playing' ? 'mdi:pause' : 'mdi:play'}"
+            @click="${() => this._handlePlayPause(this._config.default_cast_device!)}"
+          ></ha-icon>
+          <ha-icon
+            class="stop"
+            icon="mdi:stop"
+            @click="${() => this._handleStop(this._config.default_cast_device!)}"
+          ></ha-icon>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Toggle play/pause on player
+   */
+  private _handlePlayPause(entityId: string): void {
+    this.hass.callService('media_player', 'media_play_pause', { entity_id: entityId });
+  }
+
+  /**
+   * Stop playback on player
+   */
+  private _handleStop(entityId: string): void {
+    this.hass.callService('media_player', 'media_stop', { entity_id: entityId });
   }
 
   /**

@@ -70,7 +70,10 @@ export interface JellyHALibraryCardConfig extends LovelaceCardConfig {
     rating_source?: 'auto' | 'imdb' | 'tmdb';
     new_badge_days?: number;
     horizontal_alignment?: 'left' | 'center';
-    click_action?: 'jellyfin' | 'more-info' | 'none';
+    click_action?: 'jellyfin' | 'more-info' | 'cast' | 'none';
+    hold_action?: 'jellyfin' | 'more-info' | 'cast' | 'none';
+    default_cast_device?: string;
+    show_now_playing?: boolean;
     image_quality?: number;
     image_height?: number;
     theme?: 'auto' | 'light' | 'dark';

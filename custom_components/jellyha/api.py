@@ -148,6 +148,19 @@ class JellyfinApiClient:
         result = await self._request("GET", f"/Users/{user_id}/Items", params=params)
         return result.get("Items", [])
 
+    async def get_item(self, user_id: str, item_id: str) -> dict[str, Any]:
+        """Get details for a single item."""
+        return await self._request("GET", f"/Users/{user_id}/Items/{item_id}")
+
+    async def get_playback_info(
+        self, user_id: str, item_id: str, profile: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Get playback info for an item."""
+        params = {"UserId": user_id}
+        if profile:
+            return await self._request("POST", f"/Items/{item_id}/PlaybackInfo", params=params, json=profile)
+        return await self._request("GET", f"/Items/{item_id}/PlaybackInfo", params=params)
+
     def get_image_url(
         self,
         item_id: str,

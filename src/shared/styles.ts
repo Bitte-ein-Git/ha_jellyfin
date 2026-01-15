@@ -858,6 +858,59 @@ export const cardStyles = css`
     font-weight: 600;
   }
 
+  /* Now Playing Overlay on Poster */
+  .now-playing-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    z-index: 10;
+    border-radius: var(--jf-poster-radius);
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .now-playing-controls {
+    display: flex;
+    gap: 16px;
+    color: #fff;
+  }
+
+  .now-playing-controls ha-icon {
+    --mdc-icon-size: 32px;
+    cursor: pointer;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+
+  .now-playing-controls ha-icon:hover {
+    transform: scale(1.1);
+    color: var(--jf-primary);
+  }
+
+  .now-playing-controls ha-icon.stop:hover {
+    color: #f44336;
+  }
+
+  .now-playing-status {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--jf-primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
   /* Loading state */
   .loading {
     display: flex;
