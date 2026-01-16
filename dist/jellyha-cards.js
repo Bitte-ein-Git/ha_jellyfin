@@ -262,8 +262,8 @@ x.elementStyles = [], x.shadowRootOptions = { mode: "open" }, x[E("elementProper
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const Y = globalThis, tt = (e) => e, R = Y.trustedTypes, et = R ? R.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, dt = "$lit$", w = `lit$${Math.random().toFixed(9).slice(2)}$`, pt = "?" + w, At = `<${pt}>`, $ = document, T = () => $.createComment(""), k = (e) => e === null || typeof e != "object" && typeof e != "function", q = Array.isArray, Pt = (e) => q(e) || typeof e?.[Symbol.iterator] == "function", U = `[ 	
-\f\r]`, P = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, it = /-->/g, st = />/g, y = RegExp(`>|${U}(?:([^\\s"'>=/]+)(${U}*=${U}*(?:[^ 	
+const Y = globalThis, tt = (e) => e, R = Y.trustedTypes, et = R ? R.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, dt = "$lit$", w = `lit$${Math.random().toFixed(9).slice(2)}$`, pt = "?" + w, Pt = `<${pt}>`, $ = document, T = () => $.createComment(""), k = (e) => e === null || typeof e != "object" && typeof e != "function", q = Array.isArray, At = (e) => q(e) || typeof e?.[Symbol.iterator] == "function", U = `[ 	
+\f\r]`, A = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, it = /-->/g, st = />/g, y = RegExp(`>|${U}(?:([^\\s"'>=/]+)(${U}*=${U}*(?:[^ 	
 \f\r"'\`<>=]|("|')|))|$)`, "g"), ot = /'/g, at = /"/g, ut = /^(?:script|style|textarea|title)$/i, Et = (e) => (t, ...i) => ({ _$litType$: e, strings: t, values: i }), l = Et(1), C = Symbol.for("lit-noChange"), c = Symbol.for("lit-nothing"), nt = /* @__PURE__ */ new WeakMap(), b = $.createTreeWalker($, 129);
 function gt(e, t) {
   if (!q(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
@@ -271,13 +271,13 @@ function gt(e, t) {
 }
 const Tt = (e, t) => {
   const i = e.length - 1, s = [];
-  let o, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", n = P;
+  let o, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", n = A;
   for (let h = 0; h < i; h++) {
     const r = e[h];
     let p, u, d = -1, g = 0;
-    for (; g < r.length && (n.lastIndex = g, u = n.exec(r), u !== null); ) g = n.lastIndex, n === P ? u[1] === "!--" ? n = it : u[1] !== void 0 ? n = st : u[2] !== void 0 ? (ut.test(u[2]) && (o = RegExp("</" + u[2], "g")), n = y) : u[3] !== void 0 && (n = y) : n === y ? u[0] === ">" ? (n = o ?? P, d = -1) : u[1] === void 0 ? d = -2 : (d = n.lastIndex - u[2].length, p = u[1], n = u[3] === void 0 ? y : u[3] === '"' ? at : ot) : n === at || n === ot ? n = y : n === it || n === st ? n = P : (n = y, o = void 0);
+    for (; g < r.length && (n.lastIndex = g, u = n.exec(r), u !== null); ) g = n.lastIndex, n === A ? u[1] === "!--" ? n = it : u[1] !== void 0 ? n = st : u[2] !== void 0 ? (ut.test(u[2]) && (o = RegExp("</" + u[2], "g")), n = y) : u[3] !== void 0 && (n = y) : n === y ? u[0] === ">" ? (n = o ?? A, d = -1) : u[1] === void 0 ? d = -2 : (d = n.lastIndex - u[2].length, p = u[1], n = u[3] === void 0 ? y : u[3] === '"' ? at : ot) : n === at || n === ot ? n = y : n === it || n === st ? n = A : (n = y, o = void 0);
     const _ = n === y && e[h + 1].startsWith("/>") ? " " : "";
-    a += n === P ? r + At : d >= 0 ? (s.push(p), r.slice(0, d) + dt + r.slice(d) + w + _) : r + w + (d === -2 ? h : _);
+    a += n === A ? r + Pt : d >= 0 ? (s.push(p), r.slice(0, d) + dt + r.slice(d) + w + _) : r + w + (d === -2 ? h : _);
   }
   return [gt(e, a + (e[i] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), s];
 };
@@ -318,11 +318,11 @@ class M {
     return s.innerHTML = t, s;
   }
 }
-function A(e, t, i = e, s) {
+function P(e, t, i = e, s) {
   if (t === C) return t;
   let o = s !== void 0 ? i._$Co?.[s] : i._$Cl;
   const a = k(t) ? void 0 : t._$litDirective$;
-  return o?.constructor !== a && (o?._$AO?.(!1), a === void 0 ? o = void 0 : (o = new a(e), o._$AT(e, i, s)), s !== void 0 ? (i._$Co ??= [])[s] = o : i._$Cl = o), o !== void 0 && (t = A(e, o._$AS(e, t.values), o, s)), t;
+  return o?.constructor !== a && (o?._$AO?.(!1), a === void 0 ? o = void 0 : (o = new a(e), o._$AT(e, i, s)), s !== void 0 ? (i._$Co ??= [])[s] = o : i._$Cl = o), o !== void 0 && (t = P(e, o._$AS(e, t.values), o, s)), t;
 }
 class kt {
   constructor(t, i) {
@@ -371,7 +371,7 @@ class I {
     return this._$AB;
   }
   _$AI(t, i = this) {
-    t = A(this, t, i), k(t) ? t === c || t == null || t === "" ? (this._$AH !== c && this._$AR(), this._$AH = c) : t !== this._$AH && t !== C && this._(t) : t._$litType$ !== void 0 ? this.$(t) : t.nodeType !== void 0 ? this.T(t) : Pt(t) ? this.k(t) : this._(t);
+    t = P(this, t, i), k(t) ? t === c || t == null || t === "" ? (this._$AH !== c && this._$AR(), this._$AH = c) : t !== this._$AH && t !== C && this._(t) : t._$litType$ !== void 0 ? this.$(t) : t.nodeType !== void 0 ? this.T(t) : At(t) ? this.k(t) : this._(t);
   }
   O(t) {
     return this._$AA.parentNode.insertBefore(t, this._$AB);
@@ -424,11 +424,11 @@ class H {
   _$AI(t, i = this, s, o) {
     const a = this.strings;
     let n = !1;
-    if (a === void 0) t = A(this, t, i, 0), n = !k(t) || t !== this._$AH && t !== C, n && (this._$AH = t);
+    if (a === void 0) t = P(this, t, i, 0), n = !k(t) || t !== this._$AH && t !== C, n && (this._$AH = t);
     else {
       const h = t;
       let r, p;
-      for (t = a[0], r = 0; r < a.length - 1; r++) p = A(this, h[s + r], i, r), p === C && (p = this._$AH[r]), n ||= !k(p) || p !== this._$AH[r], p === c ? t = c : t !== c && (t += (p ?? "") + a[r + 1]), this._$AH[r] = p;
+      for (t = a[0], r = 0; r < a.length - 1; r++) p = P(this, h[s + r], i, r), p === C && (p = this._$AH[r]), n ||= !k(p) || p !== this._$AH[r], p === c ? t = c : t !== c && (t += (p ?? "") + a[r + 1]), this._$AH[r] = p;
     }
     n && !o && this.j(t);
   }
@@ -457,7 +457,7 @@ class It extends H {
     super(t, i, s, o, a), this.type = 5;
   }
   _$AI(t, i = this) {
-    if ((t = A(this, t, i, 0) ?? c) === C) return;
+    if ((t = P(this, t, i, 0) ?? c) === C) return;
     const s = this._$AH, o = t === c && s !== c || t.capture !== s.capture || t.once !== s.once || t.passive !== s.passive, a = t !== c && (s === c || o);
     o && this.element.removeEventListener(this.name, this, s), a && this.element.addEventListener(this.name, this, t), this._$AH = t;
   }
@@ -473,7 +473,7 @@ class Dt {
     return this._$AM._$AU;
   }
   _$AI(t) {
-    A(this, t);
+    P(this, t);
   }
 }
 const zt = Y.litHtmlPolyfillSupport;
@@ -2082,10 +2082,14 @@ let f = class extends S {
     const e = this.hass.states[this._config.entity];
     if (!e) return;
     const t = e.attributes, i = this._filterItems(t.items || []), s = this._config.items_per_page || this._itemsPerPage, o = this._config.max_pages || 10, a = Math.min(Math.ceil(i.length / s), o);
-    this._currentPage < a - 1 && (this._currentPage++, await this.updateComplete, this._setScrollPosition("start"));
+    this._currentPage < a - 1 && await this._animatePageChange("next", () => {
+      this._currentPage++;
+    });
   }
   async _prevPage() {
-    this._currentPage > 0 && (this._currentPage--, await this.updateComplete, this._setScrollPosition("end"));
+    this._currentPage > 0 && await this._animatePageChange("prev", () => {
+      this._currentPage--;
+    });
   }
   /**
    * Helper to set scroll position after page change
@@ -2093,6 +2097,20 @@ let f = class extends S {
   _setScrollPosition(e) {
     const t = this.shadowRoot?.querySelector(".carousel, .grid-wrapper");
     t && (e === "start" ? t.scrollLeft = 0 : t.scrollLeft = t.scrollWidth);
+  }
+  /**
+   * Helper to animate page changes (Slide & Fade)
+   **/
+  async _animatePageChange(e, t) {
+    const i = this.shadowRoot?.querySelector(".carousel, .grid-wrapper");
+    if (!i) {
+      t();
+      return;
+    }
+    const s = e === "next" ? "-30px" : "30px";
+    i.style.transition = "transform 0.2s ease-out, opacity 0.2s ease-out", i.style.transform = `translateX(${s})`, i.style.opacity = "0", await new Promise((a) => setTimeout(a, 200)), t(), await this.updateComplete, this._setScrollPosition(e === "next" ? "start" : "end");
+    const o = e === "next" ? "30px" : "-30px";
+    i.style.transition = "none", i.style.opacity = "0", i.style.transform = `translateX(${o})`, i.offsetHeight, i.style.transition = "transform 0.25s ease-out, opacity 0.25s ease-out", i.style.transform = "translateX(0)", i.style.opacity = "1", await new Promise((a) => setTimeout(a, 250)), i.style.transition = "", i.style.transform = "", i.style.opacity = "";
   }
   /**
    * Helper to get total pages (used for elastic check)

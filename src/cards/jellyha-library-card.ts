@@ -169,19 +169,17 @@ export class JellyHALibraryCard extends LitElement {
     const totalPages = Math.min(Math.ceil(items.length / itemsPerPage), maxPages);
 
     if (this._currentPage < totalPages - 1) {
-      this._currentPage++;
-      // Wait for update then reset scroll to start
-      await this.updateComplete;
-      this._setScrollPosition('start');
+      await this._animatePageChange('next', () => {
+        this._currentPage++;
+      });
     }
   }
 
   private async _prevPage(): Promise<void> {
     if (this._currentPage > 0) {
-      this._currentPage--;
-      // Wait for update then reset scroll to end
-      await this.updateComplete;
-      this._setScrollPosition('end');
+      await this._animatePageChange('prev', () => {
+        this._currentPage--;
+      });
     }
   }
 
@@ -198,6 +196,54 @@ export class JellyHALibraryCard extends LitElement {
         scrollContainer.scrollLeft = scrollContainer.scrollWidth;
       }
     }
+  }
+
+  /**
+   * Helper to animate page changes (Slide & Fade)
+   **/
+  private async _animatePageChange(direction: 'next' | 'prev', updateState: () => void): Promise<void> {
+    const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper') as HTMLElement;
+    if (!scrollContainer) {
+      updateState();
+      return;
+    }
+
+    // Phase 1: Exit
+    const exitTranslate = direction === 'next' ? '-30px' : '30px';
+    scrollContainer.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+    scrollContainer.style.transform = `translateX(${exitTranslate})`;
+    scrollContainer.style.opacity = '0';
+
+    // Wait for exit animation
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Phase 2: Update State & Reset properties
+    updateState();
+    await this.updateComplete;
+
+    // Reset scroll position based on direction
+    this._setScrollPosition(direction === 'next' ? 'start' : 'end');
+
+    // Phase 3: Prepare Enter
+    const enterTranslate = direction === 'next' ? '30px' : '-30px';
+    scrollContainer.style.transition = 'none';
+    scrollContainer.style.opacity = '0';
+    scrollContainer.style.transform = `translateX(${enterTranslate})`;
+
+    // Force reflow
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _ = scrollContainer.offsetHeight;
+
+    // Phase 4: Enter Animation
+    scrollContainer.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
+    scrollContainer.style.transform = 'translateX(0)';
+    scrollContainer.style.opacity = '1';
+
+    // Cleanup after animation
+    await new Promise(resolve => setTimeout(resolve, 250));
+    scrollContainer.style.transition = '';
+    scrollContainer.style.transform = '';
+    scrollContainer.style.opacity = '';
   }
 
   /**
