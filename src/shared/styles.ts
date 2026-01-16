@@ -37,6 +37,12 @@ export const cardStyles = css`
     color: var(--jf-text);
   }
 
+  /* Theme currently playing title */
+  .media-item.playing .media-title,
+  .media-item.playing .list-title {
+    color: var(--jf-primary);
+  }
+
   .card-content {
     padding: 0;
     padding-top: 12px;
@@ -100,6 +106,7 @@ export const cardStyles = css`
     scrollbar-width: none;
     -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: none; /* Disable native browser navigation/rubber-banding to use custom */
   }
 
   .carousel.paginated::-webkit-scrollbar {
@@ -208,6 +215,7 @@ export const cardStyles = css`
     -ms-overflow-style: none;
     touch-action: auto; /* Allow both vertical and horizontal touch scrolling */
     -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    overscroll-behavior-x: none;
   }
 
   .grid-wrapper::-webkit-scrollbar {
@@ -494,6 +502,13 @@ export const cardStyles = css`
     z-index: 10; /* Above scroll indicator */
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: var(--jf-poster-radius);
+  }
+
+  /* Press effect for mobile/touch */
+  .media-item.active-press .poster-container,
+  .media-item:active .poster-container {
+    transform: scale(0.96);
+    transition: transform 0.1s ease-out;
   }
 
   /* Vignette overlay for list items on hover */
@@ -862,7 +877,7 @@ export const cardStyles = css`
   .now-playing-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
     display: flex;
@@ -906,7 +921,6 @@ export const cardStyles = css`
     padding: 2px 8px;
     border-radius: 4px;
   }
-
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -968,5 +982,14 @@ export const cardStyles = css`
     .hover-overlay .overlay-description {
       -webkit-line-clamp: 2;
     }
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .spinning {
+    animation: spin 1s linear infinite;
+    transform-origin: center;
   }
 `;

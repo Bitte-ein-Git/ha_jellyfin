@@ -227,7 +227,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
                 f"&EncoderPreset=medium"
                 f"&VideoCodec=h264"
                 f"&h264-profile=high"
-                f"&h264-level=41"
+                f"&h264-level=51"
                 f"&h264-videobitdepth=8"
                 
                 # AUDIO (5.1 OK)

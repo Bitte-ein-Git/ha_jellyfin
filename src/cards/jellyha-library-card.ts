@@ -83,8 +83,13 @@ export class JellyHALibraryCard extends LitElement {
   @state() private _pressStartTime: number = 0;
   @state() private _holdTimer?: number;
   @state() private _isHoldActive: boolean = false;
+  @state() private _rewindActive: boolean = false;
   private _touchStartX: number = 0;
   private _touchStartY: number = 0;
+  private _isOverscrolling: boolean = false;
+  private _elasticAnchorX: number = 0;
+  private _itemTouchStartX: number = 0;
+  private _itemTouchStartY: number = 0;
 
   private _resizeObserver?: ResizeObserver;
   private _resizeHandler?: () => void;
@@ -149,42 +154,66 @@ export class JellyHALibraryCard extends LitElement {
     }
   }
 
-  private _nextPage(): void {
-    if (!this._config || !this.hass) return;
-
+  /* Pagination Handlers */
+  private async _nextPage(): Promise<void> {
+    if (!this._config?.entity || !this.hass) return;
     const entity = this.hass.states[this._config.entity];
     if (!entity) return;
 
+    // Get items directly as per previous implementation logic
     const attributes = entity.attributes as unknown as SensorData;
     const items = this._filterItems(attributes.items || []);
 
-    const itemsPerPage = this._config?.items_per_page || this._itemsPerPage;
-    const maxPages = this._config?.max_pages || 10;
+    const itemsPerPage = this._config.items_per_page || this._itemsPerPage;
+    const maxPages = this._config.max_pages || 10;
     const totalPages = Math.min(Math.ceil(items.length / itemsPerPage), maxPages);
 
-    if (totalPages > 1) {
-      this._currentPage = (this._currentPage + 1) % totalPages;
-      this.requestUpdate();
+    if (this._currentPage < totalPages - 1) {
+      this._currentPage++;
+      // Wait for update then reset scroll to start
+      await this.updateComplete;
+      this._setScrollPosition('start');
     }
   }
 
-  private _prevPage(): void {
-    if (!this._config || !this.hass) return;
+  private async _prevPage(): Promise<void> {
+    if (this._currentPage > 0) {
+      this._currentPage--;
+      // Wait for update then reset scroll to end
+      await this.updateComplete;
+      this._setScrollPosition('end');
+    }
+  }
 
+  /**
+   * Helper to set scroll position after page change
+   */
+  private _setScrollPosition(position: 'start' | 'end'): void {
+    const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper');
+    if (scrollContainer) {
+      if (position === 'start') {
+        scrollContainer.scrollLeft = 0;
+      } else {
+        // Set to max scroll width to jump to end
+        scrollContainer.scrollLeft = scrollContainer.scrollWidth;
+      }
+    }
+  }
+
+  /**
+   * Helper to get total pages (used for elastic check)
+   */
+  private _getTotalPages(): number {
+    if (!this._config?.entity || !this.hass) return 1;
     const entity = this.hass.states[this._config.entity];
-    if (!entity) return;
+    if (!entity) return 1;
 
+    // Quick estimation logic as per _nextPage
     const attributes = entity.attributes as unknown as SensorData;
     const items = this._filterItems(attributes.items || []);
-
-    const itemsPerPage = this._config?.items_per_page || this._itemsPerPage;
-    const maxPages = this._config?.max_pages || 10;
-    const totalPages = Math.min(Math.ceil(items.length / itemsPerPage), maxPages);
-
-    if (totalPages > 1) {
-      this._currentPage = (this._currentPage - 1 + totalPages) % totalPages;
-      this.requestUpdate();
-    }
+    const itemsPerPage = this._config.items_per_page || this._itemsPerPage;
+    const maxPages = this._config.max_pages || 10;
+    return Math.min(Math.ceil(items.length / itemsPerPage), maxPages);
   }
 
   // Touch/Swipe handlers
@@ -192,6 +221,8 @@ export class JellyHALibraryCard extends LitElement {
     this._touchStartX = e.touches[0].clientX;
     this._touchStartY = e.touches[0].clientY;
     this._isSwiping = false;
+    this._isOverscrolling = false;
+    this._elasticAnchorX = 0;
   }
 
   private _handleTouchMove(e: TouchEvent): void {
@@ -199,26 +230,108 @@ export class JellyHALibraryCard extends LitElement {
     const diffX = e.touches[0].clientX - this._touchStartX;
     const diffY = e.touches[0].clientY - this._touchStartY;
 
-    // Only swipe if horizontal movement > vertical (not scrolling)
-    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 30) {
-      this._isSwiping = true;
-      e.preventDefault(); // Prevent scroll when swiping horizontally
+    // Only swipe/scroll logic if horizontal movement > vertical
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      // Elastic Scroll Effect Logic
+      const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper') as HTMLElement;
+      if (scrollContainer && Math.abs(diffX) > 0) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainer;
+        const maxScroll = scrollWidth - clientWidth;
+        const isStart = scrollLeft <= 5;
+        const isEnd = scrollLeft >= maxScroll - 5;
+        const showPagination = this._config.show_pagination !== false;
+
+        let shouldElastic = false;
+
+        if (showPagination) {
+          // If paginated: only elastic on FIRST page (left pull) or LAST page (right pull)
+          const totalPages = this._getTotalPages();
+          if (isStart && diffX > 0 && this._currentPage === 0) shouldElastic = true;
+          if (isEnd && diffX < 0 && this._currentPage >= totalPages - 1) shouldElastic = true;
+        } else {
+          // If not paginated: elastic on both ends
+          if (isStart && diffX > 0) shouldElastic = true;
+          if (isEnd && diffX < 0) shouldElastic = true;
+        }
+
+        if (shouldElastic) {
+          if (!this._isOverscrolling) {
+            // First frame of overscroll - anchor here
+            this._isOverscrolling = true;
+            this._elasticAnchorX = diffX;
+          }
+
+          e.preventDefault(); // Stop native scroll to control transform manually
+          // Apply resistance (0.3 factor) to the delta from anchor
+          const resistance = 0.3;
+          const elasticDiff = diffX - this._elasticAnchorX;
+
+          scrollContainer.style.transition = 'none'; // Follow finger exactly
+          scrollContainer.style.transform = `translateX(${elasticDiff * resistance}px)`;
+          return;
+        }
+      }
+
+      if (Math.abs(diffX) > 30) {
+        this._isSwiping = true;
+        // Allow native scroll to happen otherwise
+      }
     }
   }
 
   private _handleTouchEnd(e: TouchEvent): void {
+    // Handle Elastic Reset
+    if (this._isOverscrolling) {
+      const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper') as HTMLElement;
+      if (scrollContainer) {
+        scrollContainer.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.8, 0.5, 1)';
+        scrollContainer.style.transform = '';
+      }
+      this._isOverscrolling = false;
+      this._elasticAnchorX = 0;
+      this._touchStartX = 0;
+      this._isSwiping = false;
+      return; // Stop here, do not trigger page switch
+    }
+
     if (!this._isSwiping) {
       this._touchStartX = 0;
       return;
     }
 
+    // If pagination is disabled, don't switch pages
+    if (this._config.show_pagination === false) {
+      this._touchStartX = 0;
+      this._isSwiping = false;
+      return;
+    }
+
     const diffX = e.changedTouches[0].clientX - this._touchStartX;
     const threshold = 50; // Minimum swipe distance
+    // Check for either carousel or grid wrapper (whichever is active)
+    const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper');
 
     if (diffX < -threshold) {
-      this._nextPage();
+      // Swipe Left (Next Page)
+      // Only switch if we are at the end of scroll
+      if (scrollContainer) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainer;
+        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+          this._nextPage();
+        }
+      } else {
+        this._nextPage();
+      }
     } else if (diffX > threshold) {
-      this._prevPage();
+      // Swipe Right (Prev Page)
+      // Only switch if we are at the start of scroll
+      if (scrollContainer) {
+        if (scrollContainer.scrollLeft <= 10) {
+          this._prevPage();
+        }
+      } else {
+        this._prevPage();
+      }
     }
 
     this._touchStartX = 0;
@@ -226,11 +339,14 @@ export class JellyHALibraryCard extends LitElement {
   }
 
   // Pointer events for Android Companion App (uses same logic as touch)
+  // Pointer events for Android Companion App (uses same logic as touch)
   private _handlePointerDown(e: PointerEvent): void {
     if (e.pointerType === 'mouse') return; // Skip mouse, only handle touch/pen
     this._touchStartX = e.clientX;
     this._touchStartY = e.clientY;
     this._isSwiping = false;
+    this._isOverscrolling = false;
+    this._elasticAnchorX = 0;
     // Capture pointer for better tracking on Android
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   }
@@ -239,9 +355,48 @@ export class JellyHALibraryCard extends LitElement {
     if (e.pointerType === 'mouse' || !this._touchStartX) return;
     const diffX = e.clientX - this._touchStartX;
     const diffY = e.clientY - this._touchStartY;
-    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 30) {
-      this._isSwiping = true;
-      e.preventDefault(); // Prevent scroll when swiping horizontally
+
+    // Only swipe/scroll logic if horizontal movement > vertical
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      // Elastic Scroll Effect Logic
+      const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper') as HTMLElement;
+      if (scrollContainer && Math.abs(diffX) > 0) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainer;
+        const maxScroll = scrollWidth - clientWidth;
+        const isStart = scrollLeft <= 5;
+        const isEnd = scrollLeft >= maxScroll - 5;
+        const showPagination = this._config.show_pagination !== false;
+
+        let shouldElastic = false;
+
+        if (showPagination) {
+          const totalPages = this._getTotalPages();
+          if (isStart && diffX > 0 && this._currentPage === 0) shouldElastic = true;
+          if (isEnd && diffX < 0 && this._currentPage >= totalPages - 1) shouldElastic = true;
+        } else {
+          if (isStart && diffX > 0) shouldElastic = true;
+          if (isEnd && diffX < 0) shouldElastic = true;
+        }
+
+        if (shouldElastic) {
+          if (!this._isOverscrolling) {
+            this._isOverscrolling = true;
+            this._elasticAnchorX = diffX;
+          }
+
+          e.preventDefault();
+          const resistance = 0.3;
+          const elasticDiff = diffX - this._elasticAnchorX;
+
+          scrollContainer.style.transition = 'none';
+          scrollContainer.style.transform = `translateX(${elasticDiff * resistance}px)`;
+          return;
+        }
+      }
+
+      if (Math.abs(diffX) > 30) {
+        this._isSwiping = true;
+      }
     }
   }
 
@@ -249,16 +404,53 @@ export class JellyHALibraryCard extends LitElement {
     // Release pointer capture
     (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
 
+    // Handle Elastic Reset
+    if (this._isOverscrolling) {
+      const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper') as HTMLElement;
+      if (scrollContainer) {
+        scrollContainer.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.8, 0.5, 1)';
+        scrollContainer.style.transform = '';
+      }
+      this._isOverscrolling = false;
+      this._elasticAnchorX = 0;
+      this._touchStartX = 0;
+      this._isSwiping = false;
+      return;
+    }
+
     if (e.pointerType === 'mouse' || !this._isSwiping) {
       this._touchStartX = 0;
       return;
     }
+
+    // If pagination is disabled, don't switch pages
+    if (this._config.show_pagination === false) {
+      this._touchStartX = 0;
+      this._isSwiping = false;
+      return;
+    }
+
     const diffX = e.clientX - this._touchStartX;
     const threshold = 50;
+    const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper');
+
     if (diffX < -threshold) {
-      this._nextPage();
+      if (scrollContainer) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainer;
+        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+          this._nextPage();
+        }
+      } else {
+        this._nextPage();
+      }
     } else if (diffX > threshold) {
-      this._prevPage();
+      if (scrollContainer) {
+        if (scrollContainer.scrollLeft <= 10) {
+          this._prevPage();
+        }
+      } else {
+        this._prevPage();
+      }
     }
     this._touchStartX = 0;
     this._isSwiping = false;
@@ -712,24 +904,27 @@ export class JellyHALibraryCard extends LitElement {
     const isNew = this._isNewItem(item);
     const rating = this._getRating(item);
     const showMediaTypeBadge = this._config.show_media_type_badge !== false;
+    const isPlaying = this._isItemPlaying(item);
 
     return html`
       <div
-        class="media-item list-item ${!this._config.show_title ? 'no-title' : ''} ${this._config.metadata_position === 'above' ? 'metadata-above' : ''}"
+        class="media-item list-item ${isPlaying ? 'playing' : ''} ${!this._config.show_title ? 'no-title' : ''} ${this._config.metadata_position === 'above' ? 'metadata-above' : ''}"
         tabindex="0"
         role="button"
         aria-label="${item.name}"
         @mousedown="${(e: MouseEvent) => this._handleMouseDown(e, item)}"
         @mouseup="${(e: MouseEvent) => this._handleMouseUp(e, item)}"
         @touchstart="${(e: TouchEvent) => this._handleTouchStartItem(e, item)}"
+        @touchmove="${(e: TouchEvent) => this._handleTouchMoveItem(e, item)}"
         @touchend="${(e: TouchEvent) => this._handleTouchEndItem(e, item)}"
+        @touchcancel="${(e: TouchEvent) => this._handleTouchEndItem(e, item)}"
         @keydown="${(e: KeyboardEvent) => this._handleKeydown(e, item)}"
       >
         <div class="list-poster-wrapper">
           ${this._config.metadata_position === 'above' && this._config.show_date_added && item.date_added
         ? html`<p class="list-date-added">${this._formatDate(item.date_added)}</p>`
         : nothing}
-          <div class="poster-container">
+          <div class="poster-container" id="poster-${item.id}">
             <div class="poster-inner">
               <img
                 class="poster"
@@ -741,7 +936,13 @@ export class JellyHALibraryCard extends LitElement {
               />
               <div class="poster-skeleton"></div>
               
-              ${this._renderStatusBadge(item, isNew)}
+              ${showMediaTypeBadge && !isPlaying
+        ? html`<span class="list-type-badge ${item.type === 'Movie' ? 'movie' : 'series'}">
+                  ${item.type === 'Movie' ? 'Movie' : 'Series'}
+                </span>`
+        : nothing}
+              
+              ${!isPlaying ? this._renderStatusBadge(item, isNew) : nothing}
               ${this._renderNowPlayingOverlay(item)}
             </div>
           </div>
@@ -756,7 +957,7 @@ export class JellyHALibraryCard extends LitElement {
         : nothing}
           
           <div class="list-metadata">
-            ${showMediaTypeBadge
+            ${showMediaTypeBadge && !isPlaying
         ? html`<span class="list-type-badge ${item.type === 'Movie' ? 'movie' : 'series'}">
                   ${item.type === 'Movie' ? 'Movie' : 'Series'}
                 </span>`
@@ -829,17 +1030,20 @@ export class JellyHALibraryCard extends LitElement {
     const isNew = this._isNewItem(item);
     const rating = this._getRating(item);
     const showMediaTypeBadge = this._config.show_media_type_badge !== false;
+    const isPlaying = this._isItemPlaying(item);
 
     return html`
       <div
-        class="media-item"
+        class="media-item ${isPlaying ? 'playing' : ''}"
         tabindex="0"
         role="button"
         aria-label="${item.name}"
         @mousedown="${(e: MouseEvent) => this._handleMouseDown(e, item)}"
         @mouseup="${(e: MouseEvent) => this._handleMouseUp(e, item)}"
         @touchstart="${(e: TouchEvent) => this._handleTouchStartItem(e, item)}"
+        @touchmove="${(e: TouchEvent) => this._handleTouchMoveItem(e, item)}"
         @touchend="${(e: TouchEvent) => this._handleTouchEndItem(e, item)}"
+        @touchcancel="${(e: TouchEvent) => this._handleTouchEndItem(e, item)}"
         @keydown="${(e: KeyboardEvent) => this._handleKeydown(e, item)}"
       >
         ${this._config.metadata_position === 'above'
@@ -869,15 +1073,15 @@ export class JellyHALibraryCard extends LitElement {
             />
             <div class="poster-skeleton"></div>
             
-            ${showMediaTypeBadge
+            ${showMediaTypeBadge && !isPlaying
         ? html`<span class="media-type-badge ${item.type === 'Movie' ? 'movie' : 'series'}">
                   ${item.type === 'Movie' ? 'Movie' : 'Series'}
                 </span>`
         : nothing}
             
-            ${this._renderStatusBadge(item, isNew)}
+            ${!isPlaying ? this._renderStatusBadge(item, isNew) : nothing}
             
-            ${this._config.show_ratings && rating
+            ${this._config.show_ratings && rating && !isPlaying
         ? html`
                   <span class="rating">
                     <ha-icon icon="mdi:star"></ha-icon>
@@ -886,7 +1090,7 @@ export class JellyHALibraryCard extends LitElement {
                 `
         : nothing}
             
-            ${this._config.show_runtime && item.runtime_minutes
+            ${this._config.show_runtime && item.runtime_minutes && !isPlaying
         ? html`
                   <span class="runtime">
                     <ha-icon icon="mdi:clock-outline"></ha-icon>
@@ -895,16 +1099,17 @@ export class JellyHALibraryCard extends LitElement {
                 `
         : nothing}
             
+            ${!isPlaying ? html`
             <div class="hover-overlay">
                     ${item.year ? html`<span class="overlay-year">${item.year}</span>` : nothing}
                     <h3 class="overlay-title">${item.name}</h3>
                     ${this._config.show_genres && item.genres && item.genres.length > 0
-        ? html`<span class="overlay-genres">${item.genres.slice(0, 3).join(', ')}</span>`
-        : nothing}
+          ? html`<span class="overlay-genres">${item.genres.slice(0, 3).join(', ')}</span>`
+          : nothing}
                     ${this._config.show_description_on_hover !== false && item.description
-        ? html`<p class="overlay-description">${item.description}</p>`
-        : nothing}
-            </div>
+          ? html`<p class="overlay-description">${item.description}</p>`
+          : nothing}
+            </div>` : nothing}
 
             ${this._renderNowPlayingOverlay(item)}
           </div>
@@ -1034,13 +1239,35 @@ export class JellyHALibraryCard extends LitElement {
    */
   private _handleTouchStartItem(e: TouchEvent, item: MediaItem): void {
     if (e.touches.length > 0) {
-      this._touchStartX = e.touches[0].clientX;
-      this._touchStartY = e.touches[0].clientY;
+      this._itemTouchStartX = e.touches[0].clientX;
+      this._itemTouchStartY = e.touches[0].clientY;
+
+      // Add visual feedback class
+      const target = e.currentTarget as HTMLElement;
+      target.classList.add('active-press');
     }
     this._startHoldTimer(item);
   }
 
+  private _handleTouchMoveItem(e: TouchEvent, _item: MediaItem): void {
+    if (e.touches.length > 0) {
+      const diffX = Math.abs(e.touches[0].clientX - this._itemTouchStartX);
+      const diffY = Math.abs(e.touches[0].clientY - this._itemTouchStartY);
+
+      // If moved more than 10px, cancel hold
+      if (diffX > 10 || diffY > 10) {
+        this._clearHoldTimer();
+        const target = e.currentTarget as HTMLElement;
+        target.classList.remove('active-press');
+      }
+    }
+  }
+
   private _handleTouchEndItem(e: TouchEvent, item: MediaItem): void {
+    // Remove visual feedback class
+    const target = e.currentTarget as HTMLElement;
+    target.classList.remove('active-press');
+
     if (this._holdTimer) {
       clearTimeout(this._holdTimer);
       this._holdTimer = undefined;
@@ -1049,8 +1276,8 @@ export class JellyHALibraryCard extends LitElement {
     // Calculate movement distance
     let dist = 0;
     if (e.changedTouches.length > 0) {
-      const diffX = e.changedTouches[0].clientX - this._touchStartX;
-      const diffY = e.changedTouches[0].clientY - this._touchStartY;
+      const diffX = e.changedTouches[0].clientX - this._itemTouchStartX;
+      const diffY = e.changedTouches[0].clientY - this._itemTouchStartY;
       dist = Math.sqrt(diffX * diffX + diffY * diffY);
     }
 
@@ -1072,9 +1299,37 @@ export class JellyHALibraryCard extends LitElement {
   }
 
   /**
+   * Check if item is currently playing
+   */
+  private _isItemPlaying(item: MediaItem): boolean {
+    if (!this._config.default_cast_device || !this.hass) return false;
+
+    const player = this.hass.states[this._config.default_cast_device];
+    if (!player || (player.state !== 'playing' && player.state !== 'paused' && player.state !== 'buffering')) {
+      return false;
+    }
+
+    const playingTitle = player.attributes.media_title as string;
+    const playingSeries = player.attributes.media_series_title as string;
+
+    return (
+      (item.name && (playingTitle === item.name || playingSeries === item.name)) ||
+      (item.type === 'Series' && playingSeries === item.name)
+    );
+  }
+
+  /**
    * Perform configured action
    */
   private _performAction(item: MediaItem, type: 'click' | 'hold'): void {
+    // Haptic feedback
+    const event = new CustomEvent('haptic', {
+      detail: 'selection',
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+
     const action = type === 'click' ? this._config.click_action : this._config.hold_action;
 
     switch (action) {
@@ -1154,49 +1409,57 @@ export class JellyHALibraryCard extends LitElement {
    * Render Now Playing overlay if item matches currently playing media
    */
   private _renderNowPlayingOverlay(item: MediaItem): TemplateResult | typeof nothing {
-    if (!this._config.show_now_playing || !this._config.default_cast_device) {
+    if (!this._config.show_now_playing || !this._isItemPlaying(item)) {
       return nothing;
     }
 
-    const player = this.hass.states[this._config.default_cast_device];
-    if (!player || (player.state !== 'playing' && player.state !== 'paused')) {
-      return nothing;
-    }
-
-    // Correlate by title or series title
-    const playingTitle = player.attributes.media_title as string;
-    const playingSeries = player.attributes.media_series_title as string;
-
-    const isMatching =
-      (item.name && (playingTitle === item.name || playingSeries === item.name)) ||
-      (item.type === 'Series' && playingSeries === item.name);
-
-    if (!isMatching) {
-      return nothing;
-    }
+    const player = this.hass.states[this._config.default_cast_device!];
 
     return html`
-      <div class="now-playing-overlay" @click="${(e: Event) => e.stopPropagation()}">
-        <span class="now-playing-status">${player.state}</span>
+      <div 
+        class="now-playing-overlay" 
+        @click="${() => this._handleRewind(this._config.default_cast_device!)}"
+        @mousedown="${this._stopPropagation}"
+        @mouseup="${this._stopPropagation}"
+        @touchstart="${this._stopPropagation}"
+        @touchend="${this._stopPropagation}"
+        @touchcancel="${this._stopPropagation}"
+      >
+        <span class="now-playing-status">
+          ${this._rewindActive ? 'REWINDING' : player.state}
+        </span>
         <div class="now-playing-controls">
           <ha-icon
-            icon="${player.state === 'playing' ? 'mdi:pause' : 'mdi:play'}"
-            @click="${() => this._handlePlayPause(this._config.default_cast_device!)}"
+            class="${this._rewindActive ? 'spinning' : ''}"
+            icon="${this._rewindActive ? 'mdi:loading' : (player.state === 'playing' ? 'mdi:pause' : 'mdi:play')}"
+            @click="${(e: Event) => { e.stopPropagation(); this._handlePlayPause(this._config.default_cast_device!); }}"
           ></ha-icon>
           <ha-icon
             class="stop"
             icon="mdi:stop"
-            @click="${() => this._handleStop(this._config.default_cast_device!)}"
+            @click="${(e: Event) => { e.stopPropagation(); this._handleStop(this._config.default_cast_device!); }}"
           ></ha-icon>
         </div>
       </div>
     `;
   }
 
+  private _stopPropagation(e: Event): void {
+    e.stopPropagation();
+  }
+
   /**
    * Toggle play/pause on player
    */
   private _handlePlayPause(entityId: string): void {
+    // Haptic feedback
+    const event = new CustomEvent('haptic', {
+      detail: 'selection',
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+
     this.hass.callService('media_player', 'media_play_pause', { entity_id: entityId });
   }
 
@@ -1204,7 +1467,64 @@ export class JellyHALibraryCard extends LitElement {
    * Stop playback on player
    */
   private _handleStop(entityId: string): void {
-    this.hass.callService('media_player', 'media_stop', { entity_id: entityId });
+    // Haptic feedback
+    const event = new CustomEvent('haptic', {
+      detail: 'selection',
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+
+    this.hass.callService('media_player', 'turn_off', { entity_id: entityId });
+  }
+
+  /**
+   * Handle rewind on overlay click
+   */
+  private _handleRewind(entityId: string): void {
+    // Stop propagation if called from event
+    // (In template we pass string, but if needed we can handle event)
+
+    // Visual feedback
+    this._rewindActive = true;
+    setTimeout(() => {
+      this._rewindActive = false;
+    }, 2000);
+
+    // Haptic feedback
+    const event = new CustomEvent('haptic', {
+      detail: 'selection',
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+
+    // Calculate seek position
+    const player = this.hass.states[entityId];
+    if (player && player.attributes.media_position) {
+      const position = player.attributes.media_position as number;
+      const validTime = player.attributes.media_position_updated_at as string;
+      let currentPosition = position;
+
+      // If we have a timestamp, calculate elapsed time
+      if (validTime) {
+        const now = new Date().getTime();
+        const updated = new Date(validTime).getTime();
+        const diff = (now - updated) / 1000;
+        // Only add diff if playing
+        if (player.state === 'playing') {
+          currentPosition += diff;
+        }
+      }
+
+      // Seek back 20 seconds, ensuring we don't go below 0
+      const newPosition = Math.max(0, currentPosition - 20);
+
+      this.hass.callService('media_player', 'media_seek', {
+        entity_id: entityId,
+        seek_position: newPosition
+      });
+    }
   }
 
   /**
