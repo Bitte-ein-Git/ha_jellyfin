@@ -149,6 +149,16 @@ Forces a manual refresh of the library data from the Jellyfin server. This is us
 Permanently deletes an item from your Jellyfin library/disk. ⚠️ **Use with caution.**
 - **item_id** (Required): The Jellyfin Item ID to delete.
 
+### `jellyha.mark_watched`
+Marks an item as watched or unwatched in Jellyfin.
+- **item_id** (Required): The Jellyfin Item ID to mark.
+- **is_played** (Required): Set to `true` to mark as watched, `false` to mark as unwatched.
+
+### `jellyha.update_favorite`
+Adds or removes an item from your Jellyfin favorites.
+- **item_id** (Required): The Jellyfin Item ID to update.
+- **is_favorite** (Required): Set to `true` to favorite, `false` to unfavorite.
+
 ## Troubleshooting
 
 ### Card is empty ("No recent media found")
