@@ -167,7 +167,7 @@ export class JellyHALibraryEditor extends LitElement {
             @closed=${(e: Event) => e.stopPropagation()}
           >
             <mwc-list-item value="jellyfin">Open in Jellyfin</mwc-list-item>
-            <mwc-list-item value="cast">Cast to Device</mwc-list-item>
+            <mwc-list-item value="cast">Cast to Chromecast</mwc-list-item>
             <mwc-list-item value="more-info">Show More Info</mwc-list-item>
             <mwc-list-item value="none">No Action</mwc-list-item>
           </ha-select>
@@ -181,7 +181,7 @@ export class JellyHALibraryEditor extends LitElement {
             @closed=${(e: Event) => e.stopPropagation()}
           >
             <mwc-list-item value="jellyfin">Open in Jellyfin</mwc-list-item>
-            <mwc-list-item value="cast">Cast to Device</mwc-list-item>
+            <mwc-list-item value="cast">Cast to Chromecast</mwc-list-item>
             <mwc-list-item value="more-info">Show More Info</mwc-list-item>
             <mwc-list-item value="none">No Action</mwc-list-item>
           </ha-select>
@@ -298,6 +298,22 @@ export class JellyHALibraryEditor extends LitElement {
         @change=${this._showPaginationChanged}
       ></ha-switch>
       <span>Show Pagination Dots</span>
+    </div>
+
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.filter_favorites === true}
+        @change=${this._filterFavoritesChanged}
+      ></ha-switch>
+      <span>Show Only Favorites</span>
+    </div>
+
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.filter_unwatched === true}
+        @change=${this._filterUnwatchedChanged}
+      ></ha-switch>
+      <span>Show Only Unwatched</span>
     </div>
   </div>
 `;
@@ -427,6 +443,16 @@ export class JellyHALibraryEditor extends LitElement {
   private _showPaginationChanged(e: Event): void {
     const target = e.target as HTMLInputElement;
     this._updateConfig('show_pagination', target.checked);
+  }
+
+  private _filterFavoritesChanged(e: Event): void {
+    const target = e.target as HTMLInputElement;
+    this._updateConfig('filter_favorites', target.checked);
+  }
+
+  private _filterUnwatchedChanged(e: Event): void {
+    const target = e.target as HTMLInputElement;
+    this._updateConfig('filter_unwatched', target.checked);
   }
 
   private _updateConfig(key: string, value: unknown): void {

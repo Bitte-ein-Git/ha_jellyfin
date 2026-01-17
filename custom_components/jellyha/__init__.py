@@ -11,23 +11,29 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 from .coordinator import JellyHALibraryCoordinator
 from .services import async_register_services
+from .storage import JellyfinLibraryData
+from .websocket import async_register_websocket
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.MEDIA_PLAYER]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up JellyHA from a config entry."""
-    coordinator = JellyHALibraryCoordinator(hass, entry)
+    storage = JellyfinLibraryData(hass, entry.entry_id)
+    await storage.async_load()
+
+    coordinator = JellyHALibraryCoordinator(hass, entry, storage)
     
     await coordinator.async_config_entry_first_refresh()
     
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
     
-    # Register services
+    # Register services and websocket
     await async_register_services(hass)
+    async_register_websocket(hass)
     
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     

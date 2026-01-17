@@ -26,11 +26,19 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-SERVICE_PLAY_ON_DEVICE = "play_on_device"
+SERVICE_PLAY_ON_CHROMECAST = "play_on_chromecast"
+SERVICE_REFRESH_LIBRARY = "refresh_library"
+SERVICE_DELETE_ITEM = "delete_item"
 
-PLAY_ON_DEVICE_SCHEMA = vol.Schema(
+PLAY_ON_CHROMECAST_SCHEMA = vol.Schema(
     {
         vol.Required("entity_id"): cv.entity_id,
+        vol.Required("item_id"): cv.string,
+    }
+)
+
+DELETE_ITEM_SCHEMA = vol.Schema(
+    {
         vol.Required("item_id"): cv.string,
     }
 )
@@ -275,10 +283,57 @@ async def async_register_services(hass: HomeAssistant) -> None:
         except Exception as e:
              _LOGGER.error("Failed to call play_media: %s", e)
 
-    if not hass.services.has_service(DOMAIN, SERVICE_PLAY_ON_DEVICE):
+    if not hass.services.has_service(DOMAIN, SERVICE_PLAY_ON_CHROMECAST):
         hass.services.async_register(
             DOMAIN,
-            SERVICE_PLAY_ON_DEVICE,
+            SERVICE_PLAY_ON_CHROMECAST,
             async_play_on_device,
-            schema=PLAY_ON_DEVICE_SCHEMA,
+            schema=PLAY_ON_CHROMECAST_SCHEMA,
+        )
+
+    async def async_refresh_library(call: ServiceCall) -> None:
+        """Force refresh library data."""
+        if DOMAIN in hass.data:
+            for entry_id in hass.data[DOMAIN]:
+                coordinator = hass.data[DOMAIN][entry_id]
+                await coordinator.async_refresh()
+                _LOGGER.info("Library refresh triggered via service")
+
+    async def async_delete_item(call: ServiceCall) -> None:
+        """Delete an item from Jellyfin library."""
+        item_id = call.data["item_id"]
+
+        coordinator = None
+        if DOMAIN in hass.data:
+            for entry_id in hass.data[DOMAIN]:
+                coordinator = hass.data[DOMAIN][entry_id]
+                break
+
+        if not coordinator or not coordinator._api:
+            _LOGGER.error("No JellyHA API client found")
+            return
+
+        api = coordinator._api
+        try:
+            # Jellyfin API: DELETE /Items/{itemId}
+            await api._request("DELETE", f"/Items/{item_id}")
+            _LOGGER.info("Deleted item %s from Jellyfin", item_id)
+            # Refresh to update local data
+            await coordinator.async_refresh()
+        except Exception as e:
+            _LOGGER.error("Failed to delete item %s: %s", item_id, e)
+
+    if not hass.services.has_service(DOMAIN, SERVICE_REFRESH_LIBRARY):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_REFRESH_LIBRARY,
+            async_refresh_library,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_DELETE_ITEM):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_DELETE_ITEM,
+            async_delete_item,
+            schema=DELETE_ITEM_SCHEMA,
         )

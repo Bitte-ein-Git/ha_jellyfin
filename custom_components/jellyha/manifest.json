@@ -6,7 +6,9 @@
     "@zupancicmarko"
   ],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": [
+    "media_source"
+  ],
   "documentation": "https://github.com/zupancicmarko/jellyha",
   "issue_tracker": "https://github.com/zupancicmarko/jellyha/issues",
   "integration_type": "service",

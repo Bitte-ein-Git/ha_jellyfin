@@ -7,6 +7,7 @@ export interface HomeAssistant {
     states: Record<string, HassEntity>;
     language: string;
     callService: (domain: string, service: string, data?: Record<string, unknown>) => Promise<void>;
+    callWS: <T>(msg: Record<string, unknown>) => Promise<T>;
 }
 
 export interface HassEntity {
@@ -45,6 +46,7 @@ export interface MediaItem {
     jellyfin_url: string;
     is_played?: boolean;
     unplayed_count?: number;
+    is_favorite?: boolean;
 }
 
 export interface JellyHALibraryCardConfig extends LovelaceCardConfig {
@@ -77,10 +79,13 @@ export interface JellyHALibraryCardConfig extends LovelaceCardConfig {
     image_quality?: number;
     image_height?: number;
     theme?: 'auto' | 'light' | 'dark';
+    filter_favorites?: boolean;
+    filter_unwatched?: boolean;
 }
 
 export interface SensorData {
-    items: MediaItem[];
+    // items: MediaItem[]; // Removed in favor of WebSocket
+    entry_id: string;
     count: number;
     server_name: string;
     last_updated: string;

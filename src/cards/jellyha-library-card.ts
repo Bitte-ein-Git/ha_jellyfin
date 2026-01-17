@@ -57,6 +57,8 @@ const DEFAULT_CONFIG: Partial<JellyHALibraryCardConfig> = {
   hold_action: 'cast',
   default_cast_device: '',
   show_now_playing: true,
+  filter_favorites: false,
+  filter_unwatched: false,
 };
 
 // Helper function to fire events (replaces custom-card-helpers)
@@ -84,6 +86,9 @@ export class JellyHALibraryCard extends LitElement {
   @state() private _holdTimer?: number;
   @state() private _isHoldActive: boolean = false;
   @state() private _rewindActive: boolean = false;
+  @state() private _items: MediaItem[] = [];
+  @state() private _lastUpdate: string = '';
+
   private _touchStartX: number = 0;
   private _touchStartY: number = 0;
   private _isOverscrolling: boolean = false;
@@ -161,8 +166,8 @@ export class JellyHALibraryCard extends LitElement {
     if (!entity) return;
 
     // Get items directly as per previous implementation logic
-    const attributes = entity.attributes as unknown as SensorData;
-    const items = this._filterItems(attributes.items || []);
+    // Use _items fetched from WebSocket
+    const items = this._filterItems(this._items || []);
 
     const itemsPerPage = this._config.items_per_page || this._itemsPerPage;
     const maxPages = this._config.max_pages || 10;
@@ -255,8 +260,8 @@ export class JellyHALibraryCard extends LitElement {
     if (!entity) return 1;
 
     // Quick estimation logic as per _nextPage
-    const attributes = entity.attributes as unknown as SensorData;
-    const items = this._filterItems(attributes.items || []);
+    // Use _items fetched from WebSocket
+    const items = this._filterItems(this._items || []);
     const itemsPerPage = this._config.items_per_page || this._itemsPerPage;
     const maxPages = this._config.max_pages || 10;
     return Math.min(Math.ceil(items.length / itemsPerPage), maxPages);
@@ -560,27 +565,38 @@ export class JellyHALibraryCard extends LitElement {
     `;
   }
 
+
+
   private _setupResizeHandler(): void {
     // Create resize handler function
     this._resizeHandler = () => {
       const rect = this.getBoundingClientRect();
-      const width = rect.width - 32; // Subtract padding
+      const width = rect.width;
 
-      if (width < 100) return;
-      if (width !== this._containerWidth) {
-        this._containerWidth = width;
-        const newItemsPerPage = Math.max(2, Math.floor(width / this.ITEM_WIDTH));
+      // If width is 0 (hidden), don't update layout yet
+      if (width === 0) return;
+
+      const contentWidth = Math.max(0, width - 32); // Subtract padding
+
+      if (contentWidth !== this._containerWidth) {
+        this._containerWidth = contentWidth;
+        // Logic for items per page based on ITEM_WIDTH constant (e.g. 150px)
+        const ITEM_WIDTH = 160;
+        const newItemsPerPage = Math.max(2, Math.floor(contentWidth / ITEM_WIDTH));
+
         if (newItemsPerPage !== this._itemsPerPage) {
           this._itemsPerPage = newItemsPerPage;
-          this._currentPage = 0;
+          // Only reset page if drastic change? Or just ensure valid page
+          // this._currentPage = 0; // Don't reset page on resize, annoying
           this.requestUpdate();
         }
 
         // Calculate effective list columns
         if (this._config) {
           const configColumns = this._config.columns || 1;
+          const LIST_ITEM_MIN_WIDTH = 300;
           if (configColumns > 1) {
-            const maxFitColumns = Math.max(1, Math.floor(width / this.LIST_ITEM_MIN_WIDTH));
+            const maxFitColumns = Math.max(1, Math.floor(contentWidth / LIST_ITEM_MIN_WIDTH));
             const newEffectiveColumns = Math.min(configColumns, maxFitColumns);
             if (newEffectiveColumns !== this._effectiveListColumns) {
               this._effectiveListColumns = newEffectiveColumns;
@@ -594,12 +610,26 @@ export class JellyHALibraryCard extends LitElement {
       }
     };
 
-    // Call once initially after a short delay (to ensure element is rendered)
-    setTimeout(() => this._resizeHandler?.(), 100);
+    // Use ResizeObserver for robust detection
+    try {
+      this._resizeObserver = new ResizeObserver(() => {
+        // Debounce slightly if needed, or just call handler
+        if (this._resizeHandler) {
+          window.requestAnimationFrame(() => this._resizeHandler!());
+        }
+      });
+      this._resizeObserver.observe(this);
+    } catch (e) {
+      // Fallback for very old browsers (unlikely in HA)
+      console.warn('ResizeObserver not supported, falling back to window resize', e);
+      window.addEventListener('resize', this._resizeHandler);
+    }
 
-    // Add window resize listener
-    window.addEventListener('resize', this._resizeHandler);
+    // Call once initially
+    this._resizeHandler();
   }
+
+
 
   private _handleDotClick(page: number): void {
     if (page !== this._currentPage) {
@@ -661,8 +691,8 @@ export class JellyHALibraryCard extends LitElement {
       return false;
     }
 
-    // Always update if internal carousel state changes
-    if (changedProps.has('_currentPage') || changedProps.has('_itemsPerPage')) {
+    // Always update if internal carousel state changes or items change
+    if (changedProps.has('_currentPage') || changedProps.has('_itemsPerPage') || changedProps.has('_items') || changedProps.has('_error')) {
       return true;
     }
 
@@ -693,13 +723,56 @@ export class JellyHALibraryCard extends LitElement {
   }
 
   /**
-   * Called after update - check for scrollable content
+   * Fetch items from WebSocket
+   */
+  private async _fetchItems(): Promise<void> {
+    if (!this._config || !this.hass) return;
+
+    const entityState = this.hass.states[this._config.entity];
+    if (!entityState) return;
+
+    this._error = undefined; // Reset error
+
+    try {
+      const result = await this.hass.callWS<{ items: MediaItem[] }>({
+        type: 'jellyha/get_items',
+        entity_id: this._config.entity
+      });
+
+      if (result && result.items) {
+        this._items = result.items;
+      }
+    } catch (err) {
+      console.error('Error fetching JellyHA items:', err);
+      this._error = `Error fetching items: ${err}`;
+    }
+  }
+
+  /**
+   * Called after update - check for scrollable content and fetch data
    */
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
 
+    // Check if we need to fetch items
+    if (changedProps.has('hass') || changedProps.has('_config')) {
+      const entity = this.hass?.states[this._config?.entity];
+      if (entity) {
+        const entryId = (entity.attributes as unknown as SensorData).entry_id;
+        const lastUpdated = (entity.attributes as unknown as SensorData).last_updated;
+
+        // If entry_id changed or last_updated changed, fetch items
+        // Also fetch if we haven't fetched yet (empty items)
+        if (lastUpdated !== this._lastUpdate || (this._items.length === 0 && entryId)) {
+          this._lastUpdate = lastUpdated;
+          this._fetchItems();
+        }
+      }
+    }
+
     // Check if carousel/grid/list is scrollable after render
     if (!this._config.show_pagination) {
+
       requestAnimationFrame(() => {
         const scrollable = this.shadowRoot?.querySelector('.carousel.scrollable, .grid-wrapper, .list-wrapper') as HTMLElement;
         if (scrollable) {
@@ -726,8 +799,12 @@ export class JellyHALibraryCard extends LitElement {
       return this._renderError(`Entity not found: ${this._config.entity}`);
     }
 
-    const attributes = entity.attributes as unknown as SensorData;
-    const items = this._filterItems(attributes.items || []);
+    if (this._error) {
+      return this._renderError(this._error);
+    }
+
+
+    const items = this._filterItems(this._items || []);
 
     return html`
       <ha-card>
@@ -758,6 +835,16 @@ export class JellyHALibraryCard extends LitElement {
       filtered = filtered.filter((item) => item.type === 'Movie');
     } else if (this._config.media_type === 'series') {
       filtered = filtered.filter((item) => item.type === 'Series');
+    }
+
+    // Filter by favorites
+    if (this._config.filter_favorites) {
+      filtered = filtered.filter((item) => item.is_favorite === true);
+    }
+
+    // Filter by unwatched
+    if (this._config.filter_unwatched) {
+      filtered = filtered.filter((item) => !item.is_played);
     }
 
     // Apply limit based on items_per_page * max_pages
@@ -1408,7 +1495,7 @@ export class JellyHALibraryCard extends LitElement {
     }
 
     try {
-      await this.hass.callService('jellyha', 'play_on_device', {
+      await this.hass.callService('jellyha', 'play_on_chromecast', {
         entity_id: entityId,
         item_id: item.id,
       });

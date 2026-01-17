@@ -26,8 +26,7 @@
                 "description": "Choose which libraries to include (leave empty for all)",
                 "data": {
                     "libraries": "Libraries",
-                    "refresh_interval": "Refresh Interval",
-                    "item_limit": "Maximum Items"
+                    "refresh_interval": "Refresh Interval"
                 }
             }
         },
@@ -43,10 +42,11 @@
     "options": {
         "step": {
             "init": {
-                "title": "Options",
+                "title": "Server Settings",
                 "data": {
-                    "refresh_interval": "Refresh Interval",
-                    "item_limit": "Maximum Items"
+                    "server_url": "Server URL",
+                    "api_key": "API Key",
+                    "refresh_interval": "Refresh Interval"
                 }
             }
         }
@@ -54,7 +54,60 @@
     "entity": {
         "sensor": {
             "library": {
-                "name": "JellyHA Library"
+                "name": "Library"
+            },
+            "favorites_count": {
+                "name": "Favorites"
+            },
+            "unwatched_count": {
+                "name": "Unwatched"
+            },
+            "unwatched_movies": {
+                "name": "Unwatched Movies"
+            },
+            "unwatched_series": {
+                "name": "Unwatched Series"
+            },
+            "last_refresh": {
+                "name": "Last Refresh"
+            },
+            "last_data_change": {
+                "name": "Last Library Update"
+            }
+        },
+        "media_player": {
+            "library_browser": {
+                "name": "Library Browser"
+            }
+        }
+    },
+    "services": {
+        "play_on_chromecast": {
+            "name": "Play on Chromecast",
+            "description": "Play a Jellyfin item on a Chromecast device",
+            "fields": {
+                "entity_id": {
+                    "name": "Media Player",
+                    "description": "The Chromecast media player entity"
+                },
+                "item_id": {
+                    "name": "Item ID",
+                    "description": "Jellyfin item ID to play"
+                }
+            }
+        },
+        "refresh_library": {
+            "name": "Refresh Library",
+            "description": "Force refresh library data from Jellyfin"
+        },
+        "delete_item": {
+            "name": "Delete Item",
+            "description": "Delete an item from Jellyfin library",
+            "fields": {
+                "item_id": {
+                    "name": "Item ID",
+                    "description": "Jellyfin item ID to delete"
+                }
             }
         }
     }

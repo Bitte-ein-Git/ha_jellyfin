@@ -125,7 +125,7 @@ class JellyfinApiClient:
     async def get_library_items(
         self,
         user_id: str,
-        limit: int = 20,
+        limit: int = 0,  # 0 = no limit, fetch all items
         item_types: list[str] | None = None,
         library_ids: list[str] | None = None,
     ) -> list[dict[str, Any]]:
@@ -136,11 +136,13 @@ class JellyfinApiClient:
         params = {
             "SortBy": "DateCreated",
             "SortOrder": "Descending",
-            "Limit": limit,
             "Recursive": "true",
             "IncludeItemTypes": ",".join(item_types),
             "Fields": "PrimaryImageAspectRatio,ProviderIds,Genres,RunTimeTicks,DateCreated,CommunityRating,Overview,MediaStreams,UserData",
         }
+
+        if limit > 0:
+            params["Limit"] = limit
 
         if library_ids:
             params["ParentId"] = ",".join(library_ids)
@@ -177,6 +179,12 @@ class JellyfinApiClient:
     def get_jellyfin_url(self, item_id: str) -> str:
         """Build deep link URL to open item in Jellyfin web UI."""
         return f"{self._server_url}/web/index.html#!/details?id={item_id}"
+
+    def get_content_url(self, item_id: str) -> str:
+        """Get direct stream URL for an item."""
+        # Simple direct stream URL. Transcoding parameters could be added here.
+        # We append api_key so the player can access without header auth.
+        return f"{self._server_url}/Videos/{item_id}/stream?static=true&api_key={self._api_key}"
 
     async def close(self) -> None:
         """Close the session."""

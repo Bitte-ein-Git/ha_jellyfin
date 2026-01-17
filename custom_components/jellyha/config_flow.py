@@ -19,12 +19,12 @@ from .api import (
 )
 from .const import (
     CONF_API_KEY,
-    CONF_ITEM_LIMIT,
+    CONF_DEVICE_NAME,
     CONF_LIBRARIES,
     CONF_REFRESH_INTERVAL,
     CONF_SERVER_URL,
     CONF_USER_ID,
-    DEFAULT_ITEM_LIMIT,
+    DEFAULT_DEVICE_NAME,
     DEFAULT_REFRESH_INTERVAL,
     DOMAIN,
 )
@@ -132,10 +132,10 @@ class JellyHAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_API_KEY: self._api_key,
                     CONF_USER_ID: self._user_id,
                     CONF_LIBRARIES: user_input.get(CONF_LIBRARIES, []),
+                    CONF_DEVICE_NAME: DEFAULT_DEVICE_NAME,
                 },
                 options={
                     CONF_REFRESH_INTERVAL: user_input.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL),
-                    CONF_ITEM_LIMIT: user_input.get(CONF_ITEM_LIMIT, DEFAULT_ITEM_LIMIT),
                 },
             )
 
@@ -169,21 +169,10 @@ class JellyHAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             mode=selector.NumberSelectorMode.SLIDER,
                         )
                     ),
-                    vol.Optional(
-                        CONF_ITEM_LIMIT,
-                        default=DEFAULT_ITEM_LIMIT,
-                    ): selector.NumberSelector(
-                        selector.NumberSelectorConfig(
-                            min=5,
-                            max=100,
-                            step=5,
-                            mode=selector.NumberSelectorMode.SLIDER,
-                        )
-                    ),
                 }
             ),
             description_placeholders={
-                "hint": "Leave empty to include all libraries",
+                "hint": "Leave libraries empty to include all",
             },
         )
 
@@ -193,26 +182,66 @@ class JellyHAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         config_entry: config_entries.ConfigEntry,
     ) -> config_entries.OptionsFlow:
         """Get the options flow for this handler."""
-        return JellyHAOptionsFlowHandler()
+        return JellyHAOptionsFlowHandler(config_entry)
 
 
 class JellyHAOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for JellyHA."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self._config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            # Separate data updates from options updates
+            new_data = dict(self._config_entry.data)
+            new_options = dict(self._config_entry.options)
+            
+            # Update server settings if changed
+            if CONF_SERVER_URL in user_input:
+                new_data[CONF_SERVER_URL] = user_input[CONF_SERVER_URL]
+            if CONF_API_KEY in user_input:
+                new_data[CONF_API_KEY] = user_input[CONF_API_KEY]
+            
+            # Update options
+            if CONF_REFRESH_INTERVAL in user_input:
+                new_options[CONF_REFRESH_INTERVAL] = user_input[CONF_REFRESH_INTERVAL]
+            
+            # Update config entry data
+            self.hass.config_entries.async_update_entry(
+                self._config_entry,
+                data=new_data,
+            )
+            
+            return self.async_create_entry(title="", data=new_options)
 
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    vol.Required(
+                        CONF_SERVER_URL,
+                        default=self._config_entry.data.get(CONF_SERVER_URL, ""),
+                    ): selector.TextSelector(
+                        selector.TextSelectorConfig(
+                            type=selector.TextSelectorType.URL,
+                        )
+                    ),
+                    vol.Required(
+                        CONF_API_KEY,
+                        default=self._config_entry.data.get(CONF_API_KEY, ""),
+                    ): selector.TextSelector(
+                        selector.TextSelectorConfig(
+                            type=selector.TextSelectorType.PASSWORD,
+                        )
+                    ),
                     vol.Optional(
                         CONF_REFRESH_INTERVAL,
-                        default=self.config_entry.options.get(
+                        default=self._config_entry.options.get(
                             CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL
                         ),
                     ): selector.NumberSelector(
@@ -221,19 +250,6 @@ class JellyHAOptionsFlowHandler(config_entries.OptionsFlow):
                             max=3600,
                             step=60,
                             unit_of_measurement="seconds",
-                            mode=selector.NumberSelectorMode.SLIDER,
-                        )
-                    ),
-                    vol.Optional(
-                        CONF_ITEM_LIMIT,
-                        default=self.config_entry.options.get(
-                            CONF_ITEM_LIMIT, DEFAULT_ITEM_LIMIT
-                        ),
-                    ): selector.NumberSelector(
-                        selector.NumberSelectorConfig(
-                            min=5,
-                            max=100,
-                            step=5,
                             mode=selector.NumberSelectorMode.SLIDER,
                         )
                     ),

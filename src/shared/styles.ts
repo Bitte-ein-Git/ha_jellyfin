@@ -3,6 +3,7 @@ import { css } from 'lit';
 
 export const cardStyles = css`
   :host {
+    display: block;
     --jf-card-bg: var(--card-background-color, #1c1c1c);
     --jf-primary: var(--primary-color, #03a9f4);
     --jf-text: var(--primary-text-color, #fff);

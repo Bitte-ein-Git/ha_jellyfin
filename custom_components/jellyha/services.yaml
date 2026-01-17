@@ -1,0 +1,32 @@
+play_on_chromecast:
+  name: Play on Chromecast
+  description: Play a Jellyfin item on a Chromecast device
+  fields:
+    entity_id:
+      name: Media Player
+      description: The Chromecast media player entity
+      required: true
+      selector:
+        entity:
+          domain: media_player
+    item_id:
+      name: Item ID
+      description: Jellyfin item ID to play
+      required: true
+      selector:
+        text:
+
+refresh_library:
+  name: Refresh Library
+  description: Force refresh library data from Jellyfin
+
+delete_item:
+  name: Delete Item
+  description: Delete an item from Jellyfin library
+  fields:
+    item_id:
+      name: Item ID
+      description: Jellyfin item ID to delete
+      required: true
+      selector:
+        text:

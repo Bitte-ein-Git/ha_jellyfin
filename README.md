@@ -2,6 +2,7 @@
 
 [![HACS][hacs-badge]][hacs-url]
 [![GitHub Release][release-badge]][release-url]
+[![My Home Assistant][my-ha-badge]][my-ha-url]
 
 A Home Assistant integration and Lovelace card that displays media from your Jellyfin server.
 
@@ -17,8 +18,19 @@ A Home Assistant integration and Lovelace card that displays media from your Jel
 - 🔗 Click to open in Jellyfin (new tab)
 - ⭐ IMDB ratings for movies, TMDB for TV shows
 - 🆕 "New" badge for recently added items
+- 📂 Full integration with Home Assistant Media Browser
+- 💾 Efficient local storage caching (no database bloat)
+- ⚡ Instant loading via WebSocket
 - 🌍 6 languages: English, German, French, Spanish, Italian, Dutch
 - 🎛️ Graphical card editor (no YAML required)
+
+## Media Browser
+
+JellyHA integrates directly with the Home Assistant Media Browser. You can explore your Jellyfin libraries, play media on supported players, and even stream directly to your browser, all without leaving Home Assistant.
+
+1. Go to **Media** in the sidebar.
+2. Select **JellyHA**.
+3. Browse your Movies, Series, and Music collections.
 
 ## Installation
 
@@ -99,10 +111,17 @@ max_pages: 5
 | `show_genres` | boolean | `true` | Show genres list |
 | `show_description_on_hover` | boolean | `true` | Show overview when hovering/tapping |
 | `show_pagination` | boolean | `true` | Show pagination dots |
-| `show_date_added` | boolean | `false` | Show the date item was added |
+| `show_date_added` | boolean | `false` | Show the date item was added in List view |
+| `show_now_playing` | boolean | `true` | Show currently playing item banner if active |
 | `metadata_position` | string | `below` | Position of text: `below` or `above` image |
+| `rating_source` | string | `auto` | Rating source: `auto`, `imdb`, `tmdb`, or `jellyfin` |
 | `new_badge_days` | number | `3` | Items added within X days show "New" badge |
-| `click_action` | string | `jellyfin` | Action on click: `jellyfin`, `more-info`, or `none` |
+| `theme` | string | `auto` | Theme: `auto`, `dark`, or `light` |
+| `click_action` | string | `jellyfin` | Action on click: `jellyfin`, `more-info`, `play`, or `none` |
+| `hold_action` | string | `cast` | Action on hold: `cast`, `jellyfin`, `more-info`, or `none` |
+| `default_cast_device` | string | `''` | Default media_player entity for casting |
+| `filter_favorites` | boolean | `false` | Filter to show only favorite items |
+| `filter_unwatched` | boolean | `false` | Filter to show only unwatched items |
 
 ## API Key
 
@@ -112,6 +131,33 @@ To get your Jellyfin API key:
 2. Go to **Administration** → **API Keys**
 3. Click **+** to create a new key
 4. Copy the generated key
+
+## Services
+
+JellyHA provides several services to control and manage your library.
+
+### `jellyha.play_on_chromecast`
+Plays a Jellyfin item on a Google Cast device with optimized transcoding settings (Tuned 2026 Strategy).
+- **entity_id** (Required): The media player entity ID of the Chromecast (e.g. `media_player.living_room_tv`).
+- **item_id** (Required): The Jellyfin Item ID to play.
+
+### `jellyha.refresh_library`
+Forces a manual refresh of the library data from the Jellyfin server. This is useful for automations or scripts.
+
+### `jellyha.delete_item`
+Permanently deletes an item from your Jellyfin library/disk. ⚠️ **Use with caution.**
+- **item_id** (Required): The Jellyfin Item ID to delete.
+
+## Troubleshooting
+
+### Card is empty ("No recent media found")
+If the card shows "No recent media found" but you know you have items:
+1. **Check Filters**: Ensure "Filter Favorites" or "Filter Unwatched" are not enabled in the card configuration if your items don't match those criteria.
+2. **Check Logs**: Open the browser console (F12) to see if there are any specific errors.
+3. **Verify Sensor**: Check `sensor.jellyha_library` in Developer Tools to ensure it has attributes (entry_id, etc.).
+
+### "Connection lost" on startup
+This usually indicates a duplicate command registration. Ensure you are running the latest version. We have implemented safeguards against this in v2.0.
 
 ## Support
 
@@ -126,3 +172,5 @@ MIT
 [hacs-url]: https://github.com/hacs/integration
 [release-badge]: https://img.shields.io/github/v/release/zupancicmarko/jellyha
 [release-url]: https://github.com/zupancicmarko/jellyha/releases
+[my-ha-badge]: https://my.home-assistant.io/badges/config_flow_start.svg
+[my-ha-url]: https://my.home-assistant.io/redirect/config_flow_start?domain=jellyha
