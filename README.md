@@ -2,7 +2,6 @@
 
 [![HACS][hacs-badge]][hacs-url]
 [![GitHub Release][release-badge]][release-url]
-[![My Home Assistant][my-ha-badge]][my-ha-url]
 
 A Home Assistant integration and Lovelace card that displays media from your Jellyfin server.
 
@@ -37,6 +36,8 @@ JellyHA integrates directly with the Home Assistant Media Browser. You can explo
 JellyHA requires **two installation steps**: installing the integration and adding the dashboard card resource.
 
 ### Step 1: Install the Integration
+
+[![My Home Assistant][my-ha-badge]][my-ha-url]
 
 #### Via HACS (Recommended)
 
@@ -157,7 +158,7 @@ If the card shows "No recent media found" but you know you have items:
 3. **Verify Sensor**: Check `sensor.jellyha_library` in Developer Tools to ensure it has attributes (entry_id, etc.).
 
 ### "Connection lost" on startup
-This usually indicates a duplicate command registration. Ensure you are running the latest version. We have implemented safeguards against this in v2.0.
+This usually indicates a duplicate command registration. Ensure you are running the latest version. We have implemented safeguards against this in v1.0.
 
 ## Support
 
