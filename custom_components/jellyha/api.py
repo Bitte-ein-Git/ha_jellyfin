@@ -154,6 +154,17 @@ class JellyfinApiClient:
         """Get details for a single item."""
         return await self._request("GET", f"/Users/{user_id}/Items/{item_id}")
 
+    async def get_next_up_episode(self, user_id: str, series_id: str) -> dict[str, Any] | None:
+        """Get the next unplayed episode for a series."""
+        params = {
+            "UserId": user_id,
+            "SeriesId": series_id,
+            "Limit": 1
+        }
+        result = await self._request("GET", "/Shows/NextUp", params=params)
+        items = result.get("Items", [])
+        return items[0] if items else None
+
     async def get_playback_info(
         self, user_id: str, item_id: str, profile: dict[str, Any] | None = None
     ) -> dict[str, Any]:

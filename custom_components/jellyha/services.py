@@ -72,6 +72,23 @@ async def async_register_services(hass: HomeAssistant) -> None:
         if not item:
              _LOGGER.error("Item %s not found", item_id)
              return
+
+        # Resolve Series/Season to Next Episode
+        item_type = item.get("Type")
+        if item_type in ["Series", "Season"]:
+            series_id = item_id if item_type == "Series" else item.get("SeriesId")
+            
+            if series_id:
+                next_episode = await api.get_next_up_episode(user_id, series_id)
+                if next_episode:
+                    # Switch target to the episode
+                    item = next_episode
+                    item_id = item.get("Id")
+                    _LOGGER.info("Resolved %s to Next Up: %s", item_type, item.get("Name"))
+                else:
+                    _LOGGER.warning("No unplayed episodes found for %s", item.get("Name"))
+                    return
+
         title = item.get("Name", "Jellyfin Media")
         image_url = api.get_image_url(item_id, "Primary", max_height=800)
         
@@ -257,6 +274,23 @@ async def async_register_services(hass: HomeAssistant) -> None:
         _LOGGER.info("Strategy: %s", log_mode)
         _LOGGER.info("URL: %s", safe_url)
 
+        # Prepare Metadata
+        metadata = {
+            "title": title,
+            "images": [{"url": image_url}]
+        }
+
+        if item.get("Type") == "Episode":
+            metadata["metadataType"] = 1  # TV Show
+            if series_name := item.get("SeriesName"):
+                metadata["seriesTitle"] = series_name
+            if season_num := item.get("ParentIndexNumber"):
+                metadata["season"] = season_num
+            if episode_num := item.get("IndexNumber"):
+                metadata["episode"] = episode_num
+        else:
+            metadata["metadataType"] = 0  # Movie/Generic
+
         # Cast
         try:
              await hass.services.async_call(
@@ -270,11 +304,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
                         "title": title,
                         "thumb": image_url,
                         "autoplay": True,
-                        "metadata": {
-                            "metadataType": 0,
-                            "title": title,
-                            "images": [{"url": image_url}]
-                        }
+                        "metadata": metadata
                     },
                 },
                 blocking=True,
