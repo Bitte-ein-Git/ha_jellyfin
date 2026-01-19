@@ -8,7 +8,16 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from .const import (
+    DOMAIN,
+    CONF_SERVER_URL,
+    CONF_API_KEY,
+    CONF_DEVICE_NAME,
+    DEFAULT_DEVICE_NAME,
+)
+from .ws_client import JellyfinWebSocketClient
 from .coordinator import JellyHALibraryCoordinator, JellyHASessionCoordinator
 from .services import async_register_services
 from .storage import JellyfinLibraryData
@@ -27,9 +36,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     lib_coordinator = JellyHALibraryCoordinator(hass, entry, storage)
     await lib_coordinator.async_config_entry_first_refresh()
 
+    # Initialize WebSocket Client
+    session = async_get_clientsession(hass)
+    server_url = entry.data[CONF_SERVER_URL]
+    api_key = entry.data[CONF_API_KEY]
+    device_name = entry.data.get(CONF_DEVICE_NAME, DEFAULT_DEVICE_NAME)
+    
+    # Use entry_id as part of device_id to ensure uniqueness if needed, or just device_name
+    ws_client = JellyfinWebSocketClient(session, server_url, api_key, device_name)
+
     # Initialize session coordinator (api is initialized in library coordinator)
     session_coordinator = JellyHASessionCoordinator(
-        hass, entry, lib_coordinator._api
+        hass, entry, lib_coordinator._api, ws_client
     )
     # Start session coordinator refresh (non-blocking)
     await session_coordinator.async_config_entry_first_refresh()
@@ -38,7 +56,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = {
         "library": lib_coordinator,
         "session": session_coordinator,
+        "ws_client": ws_client,
     }
+    
+    # Start WebSocket client
+    await ws_client.start()
+
     
     # Register services and websocket
     await async_register_services(hass)
@@ -52,7 +75,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        hass.data[DOMAIN].pop(entry.entry_id)
+        data = hass.data[DOMAIN].pop(entry.entry_id)
+        ws_client = data.get("ws_client")
+        if ws_client:
+            await ws_client.stop()
     
     return unload_ok
 

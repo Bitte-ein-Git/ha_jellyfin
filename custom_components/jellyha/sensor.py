@@ -358,6 +358,7 @@ class JellyHAUserSensor(CoordinatorEntity[JellyHASessionCoordinator], SensorEnti
 
         attributes = {
             "user_id": self._user_id,
+            "session_id": session.get("Id"),
             "device_name": session.get("DeviceName"),
             "client": session.get("Client"),
             "item_id": "",
@@ -366,6 +367,7 @@ class JellyHAUserSensor(CoordinatorEntity[JellyHASessionCoordinator], SensorEnti
             "position_ticks": 0,
             "image_url": None,
             "media_type": None,
+            "is_paused": False,
         }
 
         if "NowPlayingItem" in session:
@@ -374,6 +376,15 @@ class JellyHAUserSensor(CoordinatorEntity[JellyHASessionCoordinator], SensorEnti
             
             attributes["item_id"] = item.get("Id")
             attributes["media_type"] = item_type
+            attributes["official_rating"] = item.get("OfficialRating")
+            attributes["community_rating"] = item.get("CommunityRating")
+            attributes["critic_rating"] = item.get("CriticRating")
+            attributes["genres"] = item.get("Genres", [])
+            
+            runtime_ticks = item.get("RunTimeTicks", 0)
+            if runtime_ticks > 0:
+                # 1 tick = 100ns, so 10,000,000 ticks = 1s
+                attributes["runtime_minutes"] = int(runtime_ticks / 10000000 / 60)
             
             # Title Logic
             if item_type == "Episode":
@@ -392,6 +403,7 @@ class JellyHAUserSensor(CoordinatorEntity[JellyHASessionCoordinator], SensorEnti
             position_ticks = play_state.get("PositionTicks", 0)
             duration_ticks = item.get("RunTimeTicks", 0)
             
+            attributes["is_paused"] = play_state.get("IsPaused", False)
             attributes["position_ticks"] = position_ticks
             if duration_ticks > 0:
                 attributes["progress_percent"] = int((position_ticks / duration_ticks) * 100)
@@ -404,6 +416,15 @@ class JellyHAUserSensor(CoordinatorEntity[JellyHASessionCoordinator], SensorEnti
                 attributes["image_url"] = (
                     f"{server_url}/Items/{image_id}/Images/Primary"
                     f"?maxHeight=300&quality=90"
+                )
+            
+            # Backdrop Logic
+            backdrop_tags = item.get("BackdropImageTags", [])
+            if backdrop_tags:
+                server_url = self.coordinator._api._server_url
+                attributes["backdrop_url"] = (
+                    f"{server_url}/Items/{image_id}/Images/Backdrop/0"
+                    f"?maxWidth=800&quality=60"
                 )
 
         return attributes

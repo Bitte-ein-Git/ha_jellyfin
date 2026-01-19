@@ -8,7 +8,9 @@
 // Library Card - Display media from Jellyfin
 import './cards/jellyha-library-card';
 
+// Now Playing Card - Display active playback
+import './cards/jellyha-now-playing-card';
+
 // Future cards:
-// import './cards/jellyha-now-playing-card';
 // import './cards/jellyha-remote-card';
 // import './cards/jellyha-statistics-card';

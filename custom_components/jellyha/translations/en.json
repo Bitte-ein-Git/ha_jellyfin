@@ -26,7 +26,7 @@
                 "description": "Choose which libraries to include (leave empty for all)",
                 "data": {
                     "libraries": "Libraries",
-                    "refresh_interval": "Refresh Interval"
+                    "refresh_interval": "Library Refresh Interval"
                 }
             }
         },
@@ -46,7 +46,7 @@
                 "data": {
                     "server_url": "Server URL",
                     "api_key": "API Key",
-                    "refresh_interval": "Refresh Interval"
+                    "refresh_interval": "Library Refresh Interval"
                 }
             }
         }

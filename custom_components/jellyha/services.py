@@ -29,6 +29,8 @@ _LOGGER = logging.getLogger(__name__)
 SERVICE_PLAY_ON_CHROMECAST = "play_on_chromecast"
 SERVICE_REFRESH_LIBRARY = "refresh_library"
 SERVICE_DELETE_ITEM = "delete_item"
+SERVICE_SESSION_CONTROL = "session_control"
+SERVICE_SESSION_SEEK = "session_seek"
 
 PLAY_ON_CHROMECAST_SCHEMA = vol.Schema(
     {
@@ -40,6 +42,20 @@ PLAY_ON_CHROMECAST_SCHEMA = vol.Schema(
 DELETE_ITEM_SCHEMA = vol.Schema(
     {
         vol.Required("item_id"): cv.string,
+    }
+)
+
+SESSION_CONTROL_SCHEMA = vol.Schema(
+    {
+        vol.Required("session_id"): cv.string,
+        vol.Required("command"): vol.In(["Pause", "Unpause", "TogglePause", "Stop"]),
+    }
+)
+
+SESSION_SEEK_SCHEMA = vol.Schema(
+    {
+        vol.Required("session_id"): cv.string,
+        vol.Required("position_ticks"): cv.positive_int,
     }
 )
 
@@ -404,6 +420,56 @@ async def async_register_services(hass: HomeAssistant) -> None:
                 vol.Required("item_id"): cv.string,
                 vol.Required("is_favorite"): cv.boolean,
             }),
+        )
+
+    async def async_session_control(call: ServiceCall) -> None:
+        """Send control command to session."""
+        session_id = call.data["session_id"]
+        command = call.data["command"]
+        
+        coordinator = None
+        if DOMAIN in hass.data:
+            for entry_id in hass.data[DOMAIN]:
+                coordinator = hass.data[DOMAIN][entry_id]["library"]
+                break
+        
+        if not coordinator or not coordinator._api:
+            _LOGGER.error("No JellyHA API client found")
+            return
+            
+        await coordinator._api.session_control(session_id, command)
+
+    async def async_session_seek(call: ServiceCall) -> None:
+        """Send seek command to session."""
+        session_id = call.data["session_id"]
+        ticks = call.data["position_ticks"]
+        
+        coordinator = None
+        if DOMAIN in hass.data:
+            for entry_id in hass.data[DOMAIN]:
+                coordinator = hass.data[DOMAIN][entry_id]["library"]
+                break
+        
+        if not coordinator or not coordinator._api:
+            _LOGGER.error("No JellyHA API client found")
+            return
+            
+        await coordinator._api.session_seek(session_id, ticks)
+
+    if not hass.services.has_service(DOMAIN, SERVICE_SESSION_CONTROL):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_SESSION_CONTROL,
+            async_session_control,
+            schema=SESSION_CONTROL_SCHEMA,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_SESSION_SEEK):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_SESSION_SEEK,
+            async_session_seek,
+            schema=SESSION_SEEK_SCHEMA,
         )
 
     async def async_mark_watched(call: ServiceCall) -> None:

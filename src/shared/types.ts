@@ -99,6 +99,46 @@ export interface SensorData {
     last_updated: string;
 }
 
+export interface NowPlayingSensorData {
+    user_id: string;
+    session_id?: string;
+    device_name?: string;
+    client?: string;
+    item_id?: string;
+    title?: string;
+    series_title?: string;
+    season?: number;
+    episode?: number;
+    year?: number;
+    progress_percent?: number;
+    position_ticks?: number;
+    image_url?: string;
+    media_type?: string;
+    icon?: string;
+    is_paused?: boolean;
+    official_rating?: string;
+    runtime_minutes?: number;
+    genres?: string[];
+    backdrop_url?: string;
+    community_rating?: number;
+    critic_rating?: number;
+}
+
+export interface JellyHANowPlayingCardConfig extends LovelaceCardConfig {
+    entity: string;
+    title?: string;
+    show_title?: boolean;
+    show_media_type_badge?: boolean;
+    show_ratings?: boolean;
+    show_runtime?: boolean;
+    show_genres?: boolean;
+    show_year?: boolean;
+    show_client?: boolean;
+    show_background?: boolean;
+    show_description?: boolean;
+    theme?: 'auto' | 'light' | 'dark';
+}
+
 // Card registration info
 export interface CustomCardInfo {
     type: string;

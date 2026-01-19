@@ -229,6 +229,28 @@ class JellyfinApiClient:
             _LOGGER.error("Failed to update played status: %s", err)
             return False
 
+    async def session_control(self, session_id: str, command: str) -> bool:
+        """Send a control command to a playback session."""
+        # Command: Pause, Unpause, TogglePause, Stop
+        endpoint = f"/Sessions/{session_id}/Playing/{command}"
+        try:
+            await self._request("POST", endpoint)
+            return True
+        except JellyfinApiError as err:
+            _LOGGER.error("Failed to send session command %s: %s", command, err)
+            return False
+
+    async def session_seek(self, session_id: str, position_ticks: int) -> bool:
+        """Seek to a position in a playback session."""
+        endpoint = f"/Sessions/{session_id}/Playing/Seek"
+        params = {"PositionTicks": position_ticks}
+        try:
+            await self._request("POST", endpoint, params=params)
+            return True
+        except JellyfinApiError as err:
+            _LOGGER.error("Failed to seek session: %s", err)
+            return False
+
     async def close(self) -> None:
         """Close the session."""
         if self._session and not self._session.closed:

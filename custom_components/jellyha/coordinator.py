@@ -20,6 +20,7 @@ from .api import (
     JellyfinAuthError,
     JellyfinConnectionError,
 )
+from .ws_client import JellyfinWebSocketClient
 from .const import (
     CONF_API_KEY,
     CONF_LIBRARIES,
@@ -216,6 +217,7 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         hass: HomeAssistant,
         entry: ConfigEntry,
         api: JellyfinApiClient,
+        ws_client: JellyfinWebSocketClient | None = None,
     ) -> None:
         """Initialize the coordinator."""
         super().__init__(
@@ -227,7 +229,13 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         )
         self.entry = entry
         self._api = api
+        self._ws_client = ws_client
         self.users: dict[str, str] = {}  # Map user_id to username
+
+        if self._ws_client:
+            self._ws_client.set_on_session_update(self._handle_ws_session_update)
+            self._ws_client.set_on_connect(self._handle_ws_connect)
+            self._ws_client.set_on_disconnect(self._handle_ws_disconnect)
 
     async def _async_setup(self) -> None:
         """Fetch users once on startup."""
@@ -248,3 +256,24 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             return sessions
         except JellyfinApiError as err:
             raise UpdateFailed(f"Error fetching sessions: {err}") from err
+
+    async def _handle_ws_session_update(self, sessions: list[dict[str, Any]]) -> None:
+        """Handle session updates from WebSocket."""
+        _LOGGER.debug("Coordinator received %d sessions from WS", len(sessions))
+        for s in sessions:
+             _LOGGER.debug("Session user: %s, Device: %s, NowPlaying: %s", 
+                           s.get("UserId"), s.get("DeviceName"), "Yes" if "NowPlayingItem" in s else "No")
+        self.async_set_updated_data(sessions)
+
+    async def _handle_ws_connect(self) -> None:
+        """Handle WebSocket connection."""
+        _LOGGER.info("WebSocket connected, switching to push updates")
+        self.update_interval = None
+        # We don't need to do anything else, WS will send data.
+
+    async def _handle_ws_disconnect(self) -> None:
+        """Handle WebSocket disconnection."""
+        _LOGGER.info("WebSocket disconnected, switching to polling updates")
+        self.update_interval = timedelta(seconds=5)
+        # Trigger an immediate refresh to ensure we have data and restart the timer
+        await self.async_request_refresh()

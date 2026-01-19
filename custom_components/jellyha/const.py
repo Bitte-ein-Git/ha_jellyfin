@@ -30,3 +30,6 @@ ITEM_TYPE_EPISODE = "Episode"
 RATING_SOURCE_IMDB = "imdb"
 RATING_SOURCE_TMDB = "tmdb"
 RATING_SOURCE_AUTO = "auto"
+
+# WebSocket Events
+EVENT_SESSIONS = "Sessions"

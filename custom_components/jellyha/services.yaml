@@ -64,3 +64,48 @@ update_favorite:
       required: true
       selector:
         boolean:
+
+session_control:
+  name: Session Control
+  description: Send a control command to a Jellyfin playback session (Pause, Unpause, Stop).
+  fields:
+    session_id:
+      name: Session ID
+      description: The ID of the Jellyfin session to control.
+      required: true
+      selector:
+        text:
+    command:
+      name: Command
+      description: The control command to send.
+      required: true
+      selector:
+        select:
+          options:
+            - label: Pause
+              value: Pause
+            - label: Unpause
+              value: Unpause
+            - label: TogglePause
+              value: TogglePause
+            - label: Stop
+              value: Stop
+
+session_seek:
+  name: Session Seek
+  description: Seek to a specific position in a Jellyfin playback session.
+  fields:
+    session_id:
+      name: Session ID
+      description: The ID of the Jellyfin session to control.
+      required: true
+      selector:
+        text:
+    position_ticks:
+      name: Position Ticks
+      description: The position in ticks (1 second = 10,000,000 ticks).
+      required: true
+      selector:
+        number:
+          min: 0
+          mode: box
