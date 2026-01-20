@@ -1673,16 +1673,20 @@ export class JellyHALibraryCard extends LitElement {
           ${this._rewindActive ? 'REWINDING' : player.state}
         </span>
         <div class="now-playing-controls">
-          <ha-icon
+          <ha-icon-button
             class="${this._rewindActive ? 'spinning' : ''}"
-            icon="${this._rewindActive ? 'mdi:loading' : (player.state === 'playing' ? 'mdi:pause' : 'mdi:play')}"
+            .label=${'Play/Pause'}
             @click="${(e: Event) => { e.stopPropagation(); this._handlePlayPause(this._config.default_cast_device!); }}"
-          ></ha-icon>
-          <ha-icon
+          >
+            <ha-icon icon="${this._rewindActive ? 'mdi:loading' : (player.state === 'playing' ? 'mdi:pause' : 'mdi:play')}"></ha-icon>
+          </ha-icon-button>
+          <ha-icon-button
             class="stop"
-            icon="mdi:stop"
+            .label=${'Stop'}
             @click="${(e: Event) => { e.stopPropagation(); this._handleStop(this._config.default_cast_device!); }}"
-          ></ha-icon>
+          >
+            <ha-icon icon="mdi:stop"></ha-icon>
+          </ha-icon-button>
         </div>
       </div>
     `;

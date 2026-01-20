@@ -5,14 +5,14 @@ export const cardStyles = css`
   :host {
     display: block;
     --jf-card-bg: var(--card-background-color, #1c1c1c);
-    --jf-primary: var(--primary-color, #03a9f4);
+    --jf-primary: var(--primary-color, #18BCF2);
     --jf-text: var(--primary-text-color, #fff);
     --jf-text-secondary: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
     --jf-divider: var(--divider-color, rgba(255, 255, 255, 0.12));
     --jf-poster-radius: 10px;
     --jf-transition: 0s;
-    --jf-movie-badge: rgb(99, 102, 241);
-    --jf-series-badge: rgb(245, 158, 11);
+    --jf-movie-badge: #AA5CC3;
+    --jf-series-badge: #F2A218;
     --jf-border-color: var(--divider-color, rgba(255, 255, 255, 0.15));
   }
 
@@ -485,7 +485,6 @@ export const cardStyles = css`
   /* Theme border for currently playing item */
   .media-item.playing .poster-container {
     border-color: var(--jf-primary);
-    box-shadow: 0 0 8px rgba(var(--rgb-primary-color, 3, 169, 244), 0.4);
   }
 
   .poster-inner {
@@ -585,16 +584,15 @@ export const cardStyles = css`
     position: absolute;
     top: 6px;
     left: 6px;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 700;
+    padding: 2px 8px 1px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.3px;
     color: #fff;
     z-index: 5;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    opacity: 0.90;
   }
 
   .media-type-badge.movie {
@@ -612,15 +610,14 @@ export const cardStyles = css`
     right: 6px;
     background: var(--jf-primary);
     color: #fff;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 700;
+    padding: 2px 8px 1px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.3px;
     z-index: 5;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    opacity: 0.90;
   }
 
   /* Status Badge (Watched/Unplayed) - Top Right */
@@ -637,12 +634,12 @@ export const cardStyles = css`
 
   /* Watched Checkmark - Rectangular Green */
   .status-badge.watched {
-    padding: 2px 8px;
-    border-radius: 6px;
-    background: #4CAF50; /* Material Green 500 */
+    padding: 2px 8px 1px 8px;
+    font-weight: 800;    
+    border-radius: 4px;
+    background: #14B8A6;
     color: #fff;
-    font-size: 0.7rem;
-    opacity: 0.90;
+    font-size: 0.75rem;
   }
 
   .status-badge.watched ha-icon {
@@ -652,13 +649,12 @@ export const cardStyles = css`
 
   /* Unplayed Count - Theme Colored Badge */
   .status-badge.unplayed {
-    padding: 2px 8px;
-    border-radius: 6px;
+    padding: 2px 8px 1px 8px;
+    border-radius: 4px;
     background: var(--jf-primary);
     color: #fff;
-    font-size: 0.7rem;
-    font-weight: 700;
-    opacity: 0.90;
+    font-size: 0.75rem;
+    font-weight: 800;
   }
 
   /* Rating Badge - Bottom Right */
@@ -670,9 +666,9 @@ export const cardStyles = css`
     align-items: center;
     gap: 2px;
     background: rgba(0, 0, 0, 0.6);
-    color: #ffc107;
+    color: #F59E0B;
     padding: 3px 6px;
-    border-radius: 6px;
+    border-radius: 4px;
     font-weight: 600;
     font-size: 0.8rem;
     z-index: 5;
@@ -681,7 +677,7 @@ export const cardStyles = css`
 
   .rating ha-icon {
     --mdc-icon-size: 13px;
-    color: #ffc107;
+    color: #F59E0B;
     margin-top: -1px;
   }
 
@@ -700,7 +696,7 @@ export const cardStyles = css`
     background: rgba(0, 0, 0, 0.6);
     color: rgba(255, 255, 255, 0.85);
     padding: 3px 6px;
-    border-radius: 6px;
+    border-radius: 4px;
     font-weight: 600;
     font-size: 0.8rem;
     z-index: 5;
@@ -891,9 +887,7 @@ export const cardStyles = css`
   .now-playing-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    background: rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -906,34 +900,44 @@ export const cardStyles = css`
 
   .now-playing-controls {
     display: flex;
-    gap: 16px;
+    gap: 2px;
+    align-items: center;
+  }
+
+  .now-playing-controls ha-icon-button {
+    --mdc-icon-button-size: 40px;
+    --mdc-icon-size: 28px;
+    --mdc-ripple-color: transparent;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 50% !important;
+    transition: background 0.2s;
+    overflow: hidden;
+  }
+
+  .now-playing-controls ha-icon-button:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+  }
+
+  .now-playing-controls ha-icon-button ha-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: #fff;
   }
 
-  .now-playing-controls ha-icon {
-    --mdc-icon-size: 32px;
-    cursor: pointer;
-    transition: transform 0.2s ease, color 0.2s ease;
-  }
-
-  .now-playing-controls ha-icon:hover {
-    transform: scale(1.1);
-    color: var(--jf-primary);
-  }
-
-  .now-playing-controls ha-icon.stop:hover {
-    color: #f44336;
-  }
-
   .now-playing-status {
-    font-size: 0.75rem;
+    color: white;
     font-weight: 700;
-    color: var(--jf-primary);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    background: rgba(0, 0, 0, 0.4);
-    padding: 2px 8px;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    background: var(--primary-color);
+    padding: 2px 6px;
     border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transform: translateY(-8px);
+    white-space: nowrap;
+    text-transform: uppercase;
   }
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -957,7 +961,7 @@ export const cardStyles = css`
     min-height: 200px;
     padding: 16px;
     text-align: center;
-    color: var(--error-color, #f44336);
+    color: var(--error-color, #F25C54);
   }
 
   .error ha-icon {

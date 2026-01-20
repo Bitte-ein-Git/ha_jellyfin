@@ -24,6 +24,8 @@ export class JellyHANowPlayingCard extends LitElement {
     @property({ attribute: false }) public hass!: HomeAssistant;
     @state() private _config!: JellyHANowPlayingCardConfig;
     @state() private _rewindActive: boolean = false;
+    @state() private _overflowState: number = 0; // 0=All, 1=Hide Genres, 2=Hide Meta
+    private _resizeObserver?: ResizeObserver;
 
     public setConfig(config: JellyHANowPlayingCardConfig): void {
         this._config = {
@@ -32,6 +34,9 @@ export class JellyHANowPlayingCard extends LitElement {
             show_year: true,
             show_client: true,
             show_background: true,
+            show_genres: true,
+            show_ratings: true,
+            show_runtime: true,
             ...config,
         };
     }
@@ -50,6 +55,9 @@ export class JellyHANowPlayingCard extends LitElement {
             show_year: true,
             show_client: true,
             show_background: true,
+            show_genres: true,
+            show_ratings: true,
+            show_runtime: true,
         };
     }
 
@@ -57,12 +65,20 @@ export class JellyHANowPlayingCard extends LitElement {
         return 3;
     }
 
+    public getLayoutOptions() {
+        return {
+            grid_rows: 3,
+            grid_columns: 12,
+        };
+    }
+
     public getGridOptions() {
         return {
-            columns: 6,
+            columns: 12,
             rows: 3,
             min_columns: 6,
             min_rows: 3,
+            max_rows: 5
         };
     }
 
@@ -96,7 +112,7 @@ export class JellyHANowPlayingCard extends LitElement {
         const isPaused = attributes.is_paused;
 
         return html`
-            <ha-card class="jellyha-now-playing ${showBackground ? 'has-background' : ''}">
+            <ha-card class="jellyha-now-playing ${showBackground ? 'has-background' : ''} ${this._config.title ? 'has-title' : ''}">
                 ${showBackground ? html`
                     <div class="card-background" style="background-image: url('${backdropUrl}')"></div>
                     <div class="card-overlay"></div>
@@ -111,6 +127,11 @@ export class JellyHANowPlayingCard extends LitElement {
                         ${imageUrl ? html`
                             <div class="poster-container" @click=${this._handlePosterRewind}>
                                 <img src="${imageUrl}" alt="${attributes.title}" />
+                                ${this._rewindActive ? html`
+                                    <div class="rewind-overlay">
+                                        <span>REWINDING</span>
+                                    </div>
+                                ` : nothing}
                             </div>
                         ` : nothing}
                         
@@ -126,25 +147,27 @@ export class JellyHANowPlayingCard extends LitElement {
                                     ` : nothing}
                                 </div>
 
-                                <div class="meta-container">
-                                    ${this._config.show_media_type_badge !== false ? html`
-                                        <span class="badge meta-priority-4 ${attributes.media_type?.toLowerCase()}">${attributes.media_type}</span>
-                                    ` : nothing}
-                                    ${this._config.show_year !== false && attributes.year ? html`
-                                        <span class="meta-item meta-priority-3">${attributes.year}</span>
-                                    ` : nothing}
-                                    ${this._config.show_runtime && attributes.runtime_minutes ? html`
-                                        <span class="meta-item meta-priority-2">${attributes.runtime_minutes} min</span>
-                                    ` : nothing}
-                                    ${this._config.show_ratings && attributes.community_rating ? html`
-                                        <span class="meta-item external-rating meta-priority-1">
-                                            <ha-icon icon="mdi:star"></ha-icon>
-                                            <span>${attributes.community_rating.toFixed(1)}</span>
-                                        </span>
-                                    ` : nothing}
-                                </div>
+                                ${this._overflowState < 2 ? html`
+                                    <div class="meta-container">
+                                        ${this._config.show_media_type_badge !== false ? html`
+                                            <span class="badge meta-priority-4 ${attributes.media_type?.toLowerCase()}">${attributes.media_type}</span>
+                                        ` : nothing}
+                                        ${this._config.show_year !== false && attributes.year ? html`
+                                            <span class="meta-item meta-priority-3">${attributes.year}</span>
+                                        ` : nothing}
+                                        ${this._config.show_runtime && attributes.runtime_minutes ? html`
+                                            <span class="meta-item meta-priority-2">${attributes.runtime_minutes} min</span>
+                                        ` : nothing}
+                                        ${this._config.show_ratings && attributes.community_rating ? html`
+                                            <span class="meta-item external-rating meta-priority-1">
+                                                <ha-icon icon="mdi:star"></ha-icon>
+                                                <span>${attributes.community_rating.toFixed(1)}</span>
+                                            </span>
+                                        ` : nothing}
+                                    </div>
+                                ` : nothing}
 
-                                ${this._config.show_genres && attributes.genres?.length ? html`
+                                ${this._overflowState < 1 && this._config.show_genres && attributes.genres?.length ? html`
                                     <div class="genres-container meta-priority-0">
                                         <div class="genres">${attributes.genres.join(', ')}</div>
                                     </div>
@@ -160,7 +183,11 @@ export class JellyHANowPlayingCard extends LitElement {
                                     ` : nothing}
 
                                     <div class="playback-controls">
-                                        ${isPaused ? html`
+                                        ${this._rewindActive ? html`
+                                            <ha-icon-button class="spinning" .label=${'Loading'}>
+                                                <ha-icon icon="mdi:loading"></ha-icon>
+                                            </ha-icon-button>
+                                        ` : isPaused ? html`
                                             <ha-icon-button .label=${'Play'} @click=${() => this._handleControl('Unpause')}>
                                                 <ha-icon icon="mdi:play"></ha-icon>
                                             </ha-icon-button>
@@ -299,7 +326,7 @@ export class JellyHANowPlayingCard extends LitElement {
         this._rewindActive = true;
         setTimeout(() => {
             this._rewindActive = false;
-        }, 2000);
+        }, 1000);
 
         // Haptic feedback
         const event = new CustomEvent('haptic', {
@@ -319,6 +346,77 @@ export class JellyHANowPlayingCard extends LitElement {
         });
     }
 
+    public connectedCallback(): void {
+        super.connectedCallback();
+        this._resizeObserver = new ResizeObserver(() => {
+            this._checkLayout();
+        });
+        this._resizeObserver.observe(this);
+    }
+
+    public disconnectedCallback(): void {
+        super.disconnectedCallback();
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
+    }
+
+    protected updated(changedProps: PropertyValues): void {
+        super.updated(changedProps);
+        if (changedProps.has('hass')) {
+            this._checkLayout();
+        }
+    }
+
+    private _checkLayout(): void {
+        // Use requestAnimationFrame to ensure DOM is rendered
+        requestAnimationFrame(() => {
+            this._doLayoutCheck();
+        });
+    }
+
+    private _doLayoutCheck(): void {
+        const titleEl = this.shadowRoot?.querySelector('.title') as HTMLElement;
+        const bottomEl = this.shadowRoot?.querySelector('.info-bottom') as HTMLElement;
+
+        if (!titleEl || !bottomEl) return;
+
+        const cardRect = this.getBoundingClientRect();
+        const titleRect = titleEl.getBoundingClientRect();
+        const bottomRect = bottomEl.getBoundingClientRect();
+
+        // Calculate dynamic threshold based on where controls actually start
+        const bottomSectionTop = bottomRect.top - cardRect.top;
+
+        // Add a small buffer to ensure visual separation
+        const SAFE_THRESHOLD = bottomSectionTop - 8;
+
+        // Estimated heights
+        const PROJECTED_META_HEIGHT = 28;
+        const PROJECTED_GENRE_HEIGHT = 22;
+
+        const titleBottomRel = titleRect.bottom - cardRect.top;
+
+        const projectedMetaBottom = titleBottomRel + PROJECTED_META_HEIGHT;
+        const projectedGenreBottom = projectedMetaBottom + PROJECTED_GENRE_HEIGHT;
+
+        let newState = 0;
+
+        // Check Logic (Applies to ALL card sizes):
+        if (projectedGenreBottom > SAFE_THRESHOLD) {
+            newState = 1; // Hide Genre
+        }
+
+        // If even meta row overlaps, hide it too
+        if (projectedMetaBottom > SAFE_THRESHOLD) {
+            newState = 2; // Hide Meta + Genre
+        }
+
+        if (this._overflowState !== newState) {
+            this._overflowState = newState;
+        }
+    }
+
     static styles = css`
         :host {
             display: block;
@@ -335,7 +433,7 @@ export class JellyHANowPlayingCard extends LitElement {
             background: var(--ha-card-background, var(--card-background-color, #fff));
             border-radius: var(--ha-card-border-radius, 12px);
             transition: all 0.3s ease-out;
-            container-type: inline-size;
+            container-type: size;
             container-name: now-playing;
             height: 100%;
             display: flex;
@@ -402,7 +500,7 @@ export class JellyHANowPlayingCard extends LitElement {
             gap: 16px;
             height: 100%;
             box-sizing: border-box;
-            overflow: hidden; /* Ensure content doesn't spill out */
+            overflow: visible; /* Allow poster pop-out */
         }
         .card-header {
             font-size: 1.25rem;
@@ -417,7 +515,7 @@ export class JellyHANowPlayingCard extends LitElement {
             align-items: flex-start;
             flex: 1;
             min-height: 0; /* Crucial for nested flex scrolling/hiding */
-            overflow: hidden;
+            overflow: visible;
         }
         .poster-container {
             flex: 0 0 auto;
@@ -439,6 +537,42 @@ export class JellyHANowPlayingCard extends LitElement {
             height: 100%;
             object-fit: cover;
         }
+        .rewind-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .rewind-overlay span {
+            color: white;
+            font-weight: 700;
+            font-size: 0.8rem; /* Small fixed size */
+            letter-spacing: 0.5px;
+            background: var(--primary-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            transform: translateY(-8px);
+            white-space: nowrap; /* Prevent wrapping */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .playback-controls .spinning ha-icon {
+            animation: spin 1s linear infinite;
+        }
         .info-container {
             flex: 1;
             display: flex;
@@ -451,7 +585,7 @@ export class JellyHANowPlayingCard extends LitElement {
         .info-top {
             flex: 1 1 auto; /* Can shrink and grow */
             min-height: 0; /* Allows shrinking below content size */
-            overflow: hidden; /* Hide overflow content */
+            overflow: visible; /* Hide overflow content */
             display: flex;
             flex-direction: column;
             margin-bottom: 0;
@@ -497,11 +631,10 @@ export class JellyHANowPlayingCard extends LitElement {
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 0.95rem;
+            font-size: 0.8rem;
             color: var(--secondary-text-color);
             margin-right: auto; /* Push controls to right */
             opacity: 0.8;
-            height: 40px; /* Match button height area */
         }
 
         /* Default: Hide top device info, show bottom device info */
@@ -525,16 +658,23 @@ export class JellyHANowPlayingCard extends LitElement {
             }
         }
         
+        /* For 5+ row cards, hide device info sooner to prevent overflow */
+        @container now-playing (min-height: 300px) and (max-width: 430px) {
+            .bottom-device-info {
+                display: none !important;
+            }
+        }
+        
         /* Progressive metadata hiding based on priority */
         /* Hide genres first (priority 0) */
-        @container now-playing (max-width: 450px) {
+        @container now-playing (max-width: 400px) {
             .meta-priority-0 {
                 display: none !important;
             }
         }
         
         /* Hide rating (priority 1) */
-        @container now-playing (max-width: 380px) {
+        @container now-playing (max-width: 370px) {
             .meta-priority-1 {
                 display: none !important;
             }
@@ -548,7 +688,7 @@ export class JellyHANowPlayingCard extends LitElement {
         }
         
         /* Hide year (priority 3) */
-        @container now-playing (max-width: 280px) {
+        @container now-playing (max-width: 260px) {
             .meta-priority-3 {
                 display: none !important;
             }
@@ -560,8 +700,51 @@ export class JellyHANowPlayingCard extends LitElement {
                 display: none !important;
             }
         }
+        
+        /* Hide badge when card has title AND is short AND narrow (3 rows × 6 columns) to prevent overlap with controls */
+        .has-title .meta-priority-4 {
+            /* Default: show the badge */
+        }
+        @container now-playing (max-height: 180px) and (max-width: 320px) {
+            .has-title .meta-priority-4 {
+                display: none !important;
+            }
+        }
+
+        /* When card is tall enough (4+ rows ≈ 240px), enable wrapping instead of hiding */
+        @container now-playing (min-height: 240px) {
+            .meta-container {
+                flex-wrap: wrap;
+                white-space: normal;
+            }
+            .info-top {
+                overflow: visible;
+            }
+        }
+        
+        /* When tall AND narrow, show items that would normally hide (they'll wrap instead) */
+        @container now-playing (min-height: 240px) and (max-width: 400px) {
+            .meta-priority-0 {
+                display: block !important;
+            }
+        }
+        @container now-playing (min-height: 240px) and (max-width: 370px) {
+            .meta-priority-1 {
+                display: flex !important;
+            }
+        }
+        @container now-playing (min-height: 240px) and (max-width: 320px) {
+            .meta-priority-2 {
+                display: flex !important;
+            }
+        }
+        @container now-playing (min-height: 240px) and (max-width: 260px) {
+            .meta-priority-3 {
+                display: flex !important;
+            }
+        }
         .badge {
-            padding: 3px 10px;
+            padding: 2px 8px 1px 8px;
             border-radius: 4px;
             font-size: 0.75rem;
             font-weight: 800;
@@ -572,9 +755,9 @@ export class JellyHANowPlayingCard extends LitElement {
             flex-shrink: 0; /* Prevent badge from shrinking */
             overflow: visible; /* Ensure rounded corners aren't clipped */
         }
-        .badge.movie { background-color: #00a4dc; }
-        .badge.series { background-color: #aa5cc3; }
-        .badge.episode { background-color: #5cc3aa; }
+        .badge.movie { background-color: #AA5CC3; }
+        .badge.series { background-color: #F2A218; }
+        .badge.episode { background-color: #F59E0B; }
 
         .meta-item {
             color: var(--secondary-text-color);
@@ -586,13 +769,13 @@ export class JellyHANowPlayingCard extends LitElement {
             align-items: center;
             gap: 4px;
             background: rgba(var(--rgb-primary-text-color), 0.08);
-            padding: 2px 6px;
+            padding: 2px 0px;
             border-radius: 4px;
             border: 1px solid rgba(var(--rgb-primary-text-color), 0.1);
         }
         .meta-item.external-rating ha-icon {
             --mdc-icon-size: 14px;
-            color: #f1c40f;
+            color: #F59E0B;
         }
         .genres-container {
             flex-shrink: 0;
@@ -691,7 +874,7 @@ export class JellyHANowPlayingCard extends LitElement {
             display: flex;
             justify-content: center;
             opacity: 0.9;
-            margin-bottom: 24px;
+            margin-bottom: 4px;
         }
         .empty-state img {
             max-width: 200px;
@@ -700,7 +883,7 @@ export class JellyHANowPlayingCard extends LitElement {
         .empty-state p {
             margin: 0;
             color: var(--secondary-text-color);
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             opacity: 0.7;
         }
 
@@ -724,7 +907,7 @@ export class JellyHANowPlayingCard extends LitElement {
 
         /* Standard Tier Hiding (Width based) */
         @container now-playing (max-width: 320px) {
-            .meta-container, .genres, .device-info {
+            .genres, .device-info {
                 display: none !important;
             }
             .title {
@@ -733,9 +916,12 @@ export class JellyHANowPlayingCard extends LitElement {
             }
         }
 
-        /* Vertical Tier Hiding (Height based - for 3-row fit) */
-        @container now-playing (max-height: 200px) {
+        /* Vertical Tier Hiding (Height based - for very short cards) */
+        @container now-playing (max-height: 160px) {
             .genres, .device-info {
+                display: none !important;
+            }
+            .meta-container, .card-header {
                 display: none !important;
             }
             .meta-container {
@@ -751,13 +937,6 @@ export class JellyHANowPlayingCard extends LitElement {
             }
             .card-content {
                 gap: 8px;
-            }
-        }
-
-        /* Extreme Vertical Throttling (Very short cards) */
-        @container now-playing (max-height: 160px) {
-            .meta-container, .card-header {
-                display: none !important;
             }
             .info-top {
                 justify-content: center;
@@ -798,9 +977,9 @@ export class JellyHANowPlayingCard extends LitElement {
                 width: 100%;
             }
             .poster-container {
-                /* Center the original 140x210 poster */
-                flex: 0 0 140px !important;
-                height: 210px !important;
+                flex: 0 0 auto !important;
+                height: 100% !important;
+                aspect-ratio: 2 / 3;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             }
             .info-container {
@@ -808,8 +987,9 @@ export class JellyHANowPlayingCard extends LitElement {
                 top: 0;
                 left: 50%;
                 transform: translateX(-50%);
-                width: 140px;
-                height: 210px;
+                width: auto;
+                height: 100%;
+                aspect-ratio: 2 / 3;
                 background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.6) 80%, rgba(0,0,0,0.85) 100%);
                 display: flex;
                 flex-direction: column;
@@ -819,7 +999,7 @@ export class JellyHANowPlayingCard extends LitElement {
                 box-sizing: border-box;
                 pointer-events: none;
                 z-index: 5;
-                overflow: visible; /* Allow buttons to be clickable and not clipped oddly */
+                overflow: visible;
             }
             .info-bottom {
                 pointer-events: auto;
@@ -830,8 +1010,8 @@ export class JellyHANowPlayingCard extends LitElement {
                 margin-bottom: 8px;
             }
             .playback-controls ha-icon-button {
-                --mdc-icon-button-size: 32px;
-                --mdc-icon-size: 22px;
+                --mdc-icon-button-size: 40px;
+                --mdc-icon-size: 28px;
                 background: rgba(255, 255, 255, 0.2);
                 color: white !important;
             }
@@ -840,8 +1020,222 @@ export class JellyHANowPlayingCard extends LitElement {
                 background: rgba(255, 255, 255, 0.3);
             }
             .progress-fill {
-                background: #00a4dc;
+                background: #18BCF2;
+            }
+            .rewind-overlay span {
+                font-size: 0.75rem !important;
+                padding: 2px 5px !important;
+                white-space: nowrap;
+            }
+        }
+
+        /* Height-Based Compact Mode (Overlay controls when vertically constrained) */
+        @container now-playing (max-height: 180px) {
+            .card-header, .info-top {
+                display: none !important;
+            }
+            .card-content {
+                padding: 10px !important;
+                justify-content: center;
+                gap: 0;
+            }
+            .main-container {
+                justify-content: center;
+                gap: 0;
+                position: relative;
+                width: 100%;
+            }
+            .poster-container {
+                flex: 0 0 auto !important;
+                height: 100% !important;
+                aspect-ratio: 2 / 3;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            }
+            .info-container {
+                position: absolute;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: auto;
+                height: 100%;
+                aspect-ratio: 2 / 3;
+                background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.6) 80%, rgba(0,0,0,0.85) 100%);
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+                border-radius: 8px;
+                padding: 10px;
+                box-sizing: border-box;
+                pointer-events: none;
+                z-index: 5;
+                overflow: visible;
+            }
+            .info-bottom {
+                pointer-events: auto;
+                flex: 0 0 auto;
+            }
+            .controls-container {
+                justify-content: center;
+                margin-bottom: 8px;
+            }
+            .playback-controls ha-icon-button {
+                --mdc-icon-button-size: 40px;
+                --mdc-icon-size: 28px;
+                background: rgba(255, 255, 255, 0.2);
+                color: white !important;
+            }
+            .progress-container {
+                height: 4px;
+                background: rgba(255, 255, 255, 0.3);
+            }
+            .progress-fill {
+                background: #18BCF2;
+            }
+            .rewind-overlay span {
+                font-size: 0.75rem !important;
+                padding: 2px 5px !important;
+                white-space: nowrap;
+            }
+        }
+
+        /* Tall but Narrow Mode - When card is 4+ rows but too narrow for side layout */
+        @container now-playing (min-height: 240px) and (max-width: 300px) {
+            .card-header, .info-top {
+                display: none !important;
+            }
+            .card-content {
+                padding: 10px !important;
+                justify-content: center;
+                gap: 0;
+            }
+            .main-container {
+                justify-content: center;
+                gap: 0;
+                position: relative;
+                width: 100%;
+            }
+            .poster-container {
+                flex: 0 0 auto !important;
+                height: 100% !important;
+                aspect-ratio: 2 / 3;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            }
+            .info-container {
+                position: absolute;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: auto;
+                height: 100%;
+                aspect-ratio: 2 / 3;
+                background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.6) 80%, rgba(0,0,0,0.85) 100%);
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+                border-radius: 8px;
+                padding: 10px;
+                box-sizing: border-box;
+                pointer-events: none;
+                z-index: 5;
+                overflow: visible;
+            }
+            .info-bottom {
+                pointer-events: auto;
+                flex: 0 0 auto;
+            }
+            .controls-container {
+                justify-content: center;
+                margin-bottom: 8px;
+            }
+            .playback-controls ha-icon-button {
+                --mdc-icon-button-size: 40px;
+                --mdc-icon-size: 28px;
+                background: rgba(255, 255, 255, 0.2);
+                color: white !important;
+            }
+            .progress-container {
+                height: 4px;
+                background: rgba(255, 255, 255, 0.3);
+            }
+            .progress-fill {
+                background: #18BCF2;
+            }
+            .rewind-overlay span {
+                font-size: 0.75rem !important;
+                padding: 2px 5px !important;
+                white-space: nowrap;
+            }
+        }
+
+        /* Very Tall but Narrow Mode - When card is 5+ rows and < 9 columns */
+        @container now-playing (min-height: 300px) and (max-width: 350px) {
+            .card-header, .info-top {
+                display: none !important;
+            }
+            .card-content {
+                padding: 10px !important;
+                justify-content: center;
+                gap: 0;
+            }
+            .main-container {
+                justify-content: center;
+                gap: 0;
+                position: relative;
+                width: 100%;
+            }
+            .poster-container {
+                flex: 0 0 auto !important;
+                height: 100% !important;
+                aspect-ratio: 2 / 3;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            }
+            .info-container {
+                position: absolute;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: auto;
+                height: 100%;
+                aspect-ratio: 2 / 3;
+                background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.6) 80%, rgba(0,0,0,0.85) 100%);
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+                border-radius: 8px;
+                padding: 10px;
+                box-sizing: border-box;
+                pointer-events: none;
+                z-index: 5;
+                overflow: visible;
+            }
+            .info-bottom {
+                pointer-events: auto;
+                flex: 0 0 auto;
+            }
+            .controls-container {
+                justify-content: center;
+                margin-bottom: 8px;
+            }
+            .playback-controls ha-icon-button {
+                --mdc-icon-button-size: 40px;
+                --mdc-icon-size: 28px;
+                background: rgba(255, 255, 255, 0.2);
+                color: white !important;
+            }
+            .progress-container {
+                height: 4px;
+                background: rgba(255, 255, 255, 0.3);
+            }
+            .progress-fill {
+                background: #18BCF2;
+            }
+            /* Scale down rewind overlay for compact mode */
+            .rewind-overlay span {
+                font-size: 0.75rem !important;
+                padding: 2px 5px !important;
+                white-space: nowrap;
             }
         }
     `;
+
 }

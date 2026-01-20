@@ -159,6 +159,16 @@ Adds or removes an item from your Jellyfin favorites.
 - **item_id** (Required): The Jellyfin Item ID to update.
 - **is_favorite** (Required): Set to `true` to favorite, `false` to unfavorite.
 
+### `jellyha.session_control`
+Sends a playback control command to an active Jellyfin session. Use this for automation control of currently playing media.
+- **session_id** (Required): The Jellyfin session ID to control.
+- **command** (Required): The command to send: `Pause`, `Unpause`, `TogglePause`, or `Stop`.
+
+### `jellyha.session_seek`
+Seeks to a specific position in an active Jellyfin playback session. Use `position_ticks: 0` to rewind to the beginning.
+- **session_id** (Required): The Jellyfin session ID to control.
+- **position_ticks** (Required): The target position in ticks (1 second = 10,000,000 ticks).
+
 ## Troubleshooting
 
 ### Card is empty ("No recent media found")
