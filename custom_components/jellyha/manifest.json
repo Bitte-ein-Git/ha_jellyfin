@@ -6,7 +6,8 @@
   ],
   "config_flow": true,
   "dependencies": [
-    "media_source"
+    "media_source",
+    "http"
   ],
   "documentation": "https://github.com/zupancicmarko/jellyha",
   "issue_tracker": "https://github.com/zupancicmarko/jellyha/issues",
