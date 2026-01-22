@@ -1,7 +1,6 @@
 {
   "domain": "jellyha",
   "name": "JellyHA",
-  "version": "1.1.0",
   "codeowners": [
     "@zupancicmarko"
   ],
@@ -12,8 +11,9 @@
   "documentation": "https://github.com/zupancicmarko/jellyha",
   "issue_tracker": "https://github.com/zupancicmarko/jellyha/issues",
   "integration_type": "service",
-  "iot_class": "cloud_polling",
+  "iot_class": "local_push",
   "requirements": [
-    "aiohttp>=3.8.0"
+    "aiohttp>=3.8.0",
+    "pychromecast"
   ]
 }
