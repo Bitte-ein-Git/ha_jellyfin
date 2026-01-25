@@ -46,6 +46,10 @@ Please follow the [official HACS installation guide](https://www.hacs.xyz/docs/u
 
 [![My Home Assistant][my-ha-badge]][my-ha-url]
 
+Or
+
+[![Open your Home Assistant instance and open a repository inside the (HACS) Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=JellyHA&category=Integration&owner=zupancicmarko)
+
 #### Via HACS (Recommended)
 
 1. Open HACS in Home Assistant

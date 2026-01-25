@@ -35,6 +35,7 @@ __pycache__/
 .coverage
 htmlcov/
 verify_websocket.py
+verify_auth.py
 
 # Miscellaneous
 temp/

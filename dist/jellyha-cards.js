@@ -4715,7 +4715,7 @@ let j = class extends $ {
     const i = e.attributes;
     if (!!!i.item_id)
       return this._renderEmpty();
-    const a = i.progress_percent || 0, s = i.image_url, r = i.backdrop_url ? `${i.backdrop_url}&width=1280&format=webp` : void 0, h = this._config.show_background && r, c = i.is_paused;
+    const a = i.progress_percent || 0, s = i.image_url, r = i.backdrop_url || i.image_url ? `${i.backdrop_url || i.image_url}&width=1280&format=webp` : void 0, h = this._config.show_background && r, c = i.is_paused;
     return n`
             <ha-card class="jellyha-now-playing ${h ? "has-background" : ""} ${this._config.title ? "has-title" : ""}">
                 ${h ? n`
@@ -5276,10 +5276,6 @@ j.styles = F`
             display: flex;
             align-items: center;
             gap: 4px;
-            background: rgba(var(--rgb-primary-text-color), 0.08);
-            padding: 2px 0px;
-            border-radius: 4px;
-            border: 1px solid rgba(var(--rgb-primary-text-color), 0.1);
         }
         .meta-item.external-rating ha-icon {
             --mdc-icon-size: 14px;
