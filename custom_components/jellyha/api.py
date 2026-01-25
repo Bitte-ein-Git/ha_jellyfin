@@ -176,6 +176,13 @@ class JellyfinApiClient:
         item_types: list[str] | None = None,
         library_ids: list[str] | None = None,
         search_term: str | None = None,
+        is_played: bool | None = None,
+        is_favorite: bool | None = None,
+        genre: str | None = None,
+        year: int | None = None,
+        min_rating: float | None = None,
+        season: int | None = None,
+        episode: int | None = None,
     ) -> list[dict[str, Any]]:
         """Get library items."""
         if item_types is None:
@@ -194,6 +201,27 @@ class JellyfinApiClient:
 
         if search_term:
             params["SearchTerm"] = search_term
+            
+        if is_played is not None:
+             params["IsPlayed"] = str(is_played).lower()
+        
+        if is_favorite is not None:
+             params["IsFavorite"] = str(is_favorite).lower()
+
+        if genre:
+             params["Genres"] = genre
+
+        if year:
+             params["Years"] = str(year)
+
+        if min_rating is not None:
+             params["MinCommunityRating"] = str(min_rating)
+
+        if season is not None:
+             params["ParentIndexNumber"] = str(season)
+             
+        if episode is not None:
+             params["IndexNumber"] = str(episode)
 
         if library_ids:
             params["ParentId"] = ",".join(library_ids)

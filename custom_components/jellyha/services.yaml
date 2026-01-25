@@ -109,3 +109,90 @@ session_seek:
         number:
           min: 0
           mode: box
+
+search:
+  name: Search
+  description: Search for media in Jellyfin library and return Item IDs.
+  fields:
+    query:
+      name: Search Query
+      description: The text to search for (e.g. "Matrix", "Batman").
+      required: false
+      selector:
+        text:
+    media_type:
+      name: Media Type
+      description: Filter by media type (Movie or Series).
+      required: false
+      selector:
+        select:
+          options:
+            - label: Movie
+              value: Movie
+            - label: Series
+              value: Series
+            - label: Episode
+              value: Episode
+    is_played:
+      name: Is Watched
+      description: Filter by watched status.
+      required: false
+      selector:
+        boolean:
+    is_favorite:
+      name: Is Favorite
+      description: Filter by favorite status.
+      required: false
+      selector:
+        boolean:
+    genre:
+      name: Genre
+      description: Filter by genre (e.g. "Action", "Comedy").
+      required: false
+      selector:
+        text:
+    year:
+      name: Year
+      description: Filter by release year.
+      required: false
+      selector:
+        number:
+          min: 1900
+          max: 2030
+          mode: box
+    min_rating:
+      name: Min Rating
+      description: Filter by minimum community rating (0-10).
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.1
+          mode: box
+    season:
+      name: Season Number
+      description: Filter by season number (ParentIndexNumber).
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+    episode:
+      name: Episode Number
+      description: Filter by episode number (IndexNumber).
+      required: false
+      selector:
+        number:
+          min: 1
+          mode: box
+    limit:
+      name: Limit
+      description: Maximum number of results to return (default 5).
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 50
+          mode: box
+

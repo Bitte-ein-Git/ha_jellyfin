@@ -211,7 +211,56 @@ JellyHA provides several services to control and manage your library.
 | `jellyha.update_favorite` | Add or remove an item from favorites. | `item_id` (Req), `is_favorite` (Req) |
 | `jellyha.session_control` | Control playback (`Pause`, `Unpause`, `TogglePause`, `Stop`). | `session_id` (Req), `command` (Req) |
 | `jellyha.session_seek` | Seek to position in ticks. Use `0` to rewind. | `session_id` (Req), `position_ticks` (Req) |
+| `jellyha.search` | Search for media and return Item IDs. | `query` (Opt), `media_type` (Opt), `is_played` (Opt), `min_rating` (Opt), `season` (Opt), `episode` (Opt) |
 
+## Advanced Automations
+
+The `jellyha.search` service enables powerful automations by allowing you to find content dynamically.
+
+### Example: Play Random Unwatched Movie from 2025
+
+This automation finds a highly-rated movie you haven't watched yet and casts it.
+
+```yaml
+alias: Play Random Top 2025 Movie
+description: Plays a random unwatched movie from 2025 with a rating above 7.
+mode: restart
+max_exceeded: silent
+trigger:
+  - platform: event
+    event_type: call_service
+    event_data:
+      domain: automation
+      service: trigger
+      service_data:
+        entity_id: automation.play_random_top_2025_movie
+action:
+  # 1. Search for candidates
+  - service: jellyha.search
+    data:
+      media_type: Movie
+      is_played: false
+      year: 2025
+      min_rating: 7
+      limit: 50
+    response_variable: search_result
+
+  # 2. Check if we found anything
+  - if:
+      - condition: template
+        value_template: "{{ search_result['items'] | count > 0 }}"
+    then:
+      # 3. Pick random item and play
+      - service: jellyha.play_on_chromecast
+        data:
+          entity_id: media_player.office_tv
+          item_id: "{{ (search_result['items'] | random)['id'] }}"
+    else:
+      # 4. Notify if nothing found
+      - service: notify.persistent_notification
+        data:
+          message: "No unwatched 2025 movies with rating > 7 found."
+```
 
 ## Troubleshooting
 

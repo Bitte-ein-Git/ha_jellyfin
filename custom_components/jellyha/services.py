@@ -13,7 +13,7 @@ import logging
 import asyncio
 import voluptuous as vol
 
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse, ServiceResponse
 from homeassistant.helpers import config_validation as cv
 from homeassistant.components.media_player import (
     DOMAIN as MEDIA_PLAYER_DOMAIN,
@@ -31,6 +31,7 @@ SERVICE_REFRESH_LIBRARY = "refresh_library"
 SERVICE_DELETE_ITEM = "delete_item"
 SERVICE_SESSION_CONTROL = "session_control"
 SERVICE_SESSION_SEEK = "session_seek"
+SERVICE_SEARCH = "search"
 
 PLAY_ON_CHROMECAST_SCHEMA = vol.Schema(
     {
@@ -59,8 +60,108 @@ SESSION_SEEK_SCHEMA = vol.Schema(
     }
 )
 
+SEARCH_SCHEMA = vol.Schema(
+    {
+        vol.Optional("query"): cv.string,
+        vol.Optional("media_type"): vol.In(["Movie", "Series", "Episode"]),
+        vol.Optional("limit", default=5): cv.positive_int,
+        vol.Optional("is_played"): cv.boolean,
+        vol.Optional("is_favorite"): cv.boolean,
+        vol.Optional("genre"): cv.string,
+        vol.Optional("year"): cv.positive_int,
+        vol.Optional("min_rating"): vol.Coerce(float),
+        vol.Optional("season"): cv.positive_int,
+        vol.Optional("episode"): cv.positive_int,
+    }
+)
+
 async def async_register_services(hass: HomeAssistant) -> None:
     """Register services for JellyHA."""
+    
+    # ... (other services)
+
+    # Note: I am not updating lines prior to async_search here as they are unchanged logic from previous context
+    # Only updating async_search and below from the original view context if I were viewing it all. 
+    # But I will just output the replacement for async_search if possible.
+    # Actually, I am replacing the whole block or function.
+
+# (Redundant comments removed for cleaner replacement)
+
+    async def async_search(call: ServiceCall) -> ServiceResponse:
+        """Search for media and return results."""
+        query = call.data.get("query")
+        media_type = call.data.get("media_type")
+        limit = call.data.get("limit", 5)
+        
+        # New filters
+        is_played = call.data.get("is_played")
+        is_favorite = call.data.get("is_favorite")
+        genre = call.data.get("genre")
+        year = call.data.get("year")
+        min_rating = call.data.get("min_rating")
+        season = call.data.get("season")
+        episode = call.data.get("episode")
+
+        # Find first loaded config entry for JellyHA
+        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
+        coordinator = None
+        for entry in jellyha_entries:
+            if hasattr(entry, "runtime_data") and entry.runtime_data:
+                coordinator = entry.runtime_data.library
+                break
+        
+        if not coordinator or not coordinator._api:
+            # We fail gracefully or raise error. 
+            # If used in response_variable, error is better to debug.
+            raise ValueError("No JellyHA integration loaded")
+            
+        user_id = coordinator.entry.data.get("user_id")
+        if not user_id:
+             raise ValueError("No user ID found in config entry")
+
+        item_types = [media_type] if media_type else None
+        
+        try:
+            items = await coordinator._api.get_library_items(
+                user_id=user_id,
+                limit=limit,
+                search_term=query,
+                item_types=item_types,
+                is_played=is_played,
+                is_favorite=is_favorite,
+                genre=genre,
+                year=year,
+                min_rating=min_rating,
+                season=season,
+                episode=episode,
+            )
+        except Exception as err:
+            _LOGGER.error("Search failed: %s", err)
+            raise ValueError(f"Search failed: {err}") from err
+
+        results = []
+        for item in items:
+            results.append({
+                "id": item.get("Id"),
+                "name": item.get("Name"),
+                "type": item.get("Type"),
+                "year": item.get("ProductionYear"),
+                "rating": item.get("CommunityRating"),
+                "series_name": item.get("SeriesName"),
+                "season": item.get("ParentIndexNumber"),
+                "episode": item.get("IndexNumber"),
+            })
+
+        return {"items": results}
+
+    if not hass.services.has_service(DOMAIN, SERVICE_SEARCH):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_SEARCH,
+            async_search,
+            schema=SEARCH_SCHEMA,
+            supports_response=SupportsResponse.ONLY,
+        )
 
     async def async_play_on_device(call: ServiceCall) -> None:
         """Play a Jellyfin item using Tuned 2026 Strategy."""
@@ -392,4 +493,61 @@ async def async_register_services(hass: HomeAssistant) -> None:
                 vol.Required("item_id"): cv.string,
                 vol.Required("is_played"): cv.boolean,
             }),
+        )
+
+    async def async_search(call: ServiceCall) -> ServiceResponse:
+        """Search for media and return results."""
+        query = call.data["query"]
+        media_type = call.data.get("media_type")
+        limit = call.data.get("limit", 5)
+
+        # Find first loaded config entry for JellyHA
+        # In multi-server scenarios, this might need an entity_id target to pick specific server
+        # For now, default to first available like other services, but we should improve this later
+        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
+        coordinator = None
+        for entry in jellyha_entries:
+            if hasattr(entry, "runtime_data") and entry.runtime_data:
+                coordinator = entry.runtime_data.library
+                break
+        
+        if not coordinator or not coordinator._api:
+            raise ValueError("No JellyHA API client found")
+            
+        user_id = coordinator.entry.data.get("user_id")
+        if not user_id:
+             raise ValueError("No user ID found in config entry")
+
+        item_types = [media_type] if media_type else None
+        
+        try:
+            items = await coordinator._api.get_library_items(
+                user_id=user_id,
+                limit=limit,
+                search_term=query,
+                item_types=item_types
+            )
+        except Exception as err:
+            _LOGGER.error("Search failed: %s", err)
+            raise ValueError(f"Search failed: {err}") from err
+
+        results = []
+        for item in items:
+            results.append({
+                "id": item.get("Id"),
+                "name": item.get("Name"),
+                "type": item.get("Type"),
+                "year": item.get("ProductionYear"),
+                "rating": item.get("CommunityRating"),
+            })
+
+        return {"items": results}
+
+    if not hass.services.has_service(DOMAIN, SERVICE_SEARCH):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_SEARCH,
+            async_search,
+            schema=SEARCH_SCHEMA,
+            supports_response=SupportsResponse.ONLY,
         )
