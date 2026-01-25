@@ -551,3 +551,61 @@ async def async_register_services(hass: HomeAssistant) -> None:
             schema=SEARCH_SCHEMA,
             supports_response=SupportsResponse.ONLY,
         )
+
+    GET_RECOMMENDATIONS_SCHEMA = vol.Schema(
+        {
+            vol.Required("item_id"): cv.string,
+            vol.Optional("limit", default=5): cv.positive_int,
+        }
+    )
+
+    async def async_get_recommendations(call: ServiceCall) -> ServiceResponse:
+        """Get recommendations for an item."""
+        item_id = call.data["item_id"]
+        limit = call.data.get("limit", 5)
+
+        # Find first loaded config entry for JellyHA
+        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
+        coordinator = None
+        for entry in jellyha_entries:
+            if hasattr(entry, "runtime_data") and entry.runtime_data:
+                coordinator = entry.runtime_data.library
+                break
+        
+        if not coordinator or not coordinator._api:
+            raise ValueError("No JellyHA integration loaded")
+            
+        user_id = coordinator.entry.data.get("user_id")
+        if not user_id:
+             raise ValueError("No user ID found in config entry")
+
+        try:
+            items = await coordinator._api.get_similar_items(
+                user_id=user_id,
+                item_id=item_id,
+                limit=limit
+            )
+        except Exception as err:
+            _LOGGER.error("Recommendations failed: %s", err)
+            raise ValueError(f"Recommendations failed: {err}") from err
+
+        results = []
+        for item in items:
+            results.append({
+                "id": item.get("Id"),
+                "name": item.get("Name"),
+                "type": item.get("Type"),
+                "year": item.get("ProductionYear"),
+                "rating": item.get("CommunityRating"),
+            })
+
+        return {"items": results}
+
+    if not hass.services.has_service(DOMAIN, "get_recommendations"):
+        hass.services.async_register(
+            DOMAIN,
+            "get_recommendations",
+            async_get_recommendations,
+            schema=GET_RECOMMENDATIONS_SCHEMA,
+            supports_response=SupportsResponse.ONLY,
+        )

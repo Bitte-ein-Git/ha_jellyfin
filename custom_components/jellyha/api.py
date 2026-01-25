@@ -263,6 +263,28 @@ class JellyfinApiClient:
         result = await self._request("GET", "/Shows/NextUp", params=params)
         return result.get("Items", [])
 
+    async def get_similar_items(self, user_id: str, item_id: str, limit: int = 5) -> list[dict[str, Any]]:
+        """Get similar items (recommendations) for a specific item."""
+        params = {
+            "UserId": user_id,
+            "Limit": limit,
+            "Fields": "PrimaryImageAspectRatio,ProviderIds,Genres,RunTimeTicks,DateCreated,CommunityRating,Overview,MediaStreams,UserData,ParentId",
+        }
+        result = await self._request("GET", f"/Items/{item_id}/Similar", params=params)
+        
+        # Normalize result to list
+        items = []
+        if isinstance(result, list):
+            items = result
+        else:
+            items = result.get("Items", [])
+
+        # Enforce limit client-side
+        safe_limit = int(limit) if limit else 5
+        final_result = items[:safe_limit]
+        
+        return final_result
+
     async def get_playback_info(
         self, user_id: str, item_id: str, profile: dict[str, Any] | None = None
     ) -> dict[str, Any]:

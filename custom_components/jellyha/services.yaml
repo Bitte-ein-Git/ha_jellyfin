@@ -196,3 +196,23 @@ search:
           max: 50
           mode: box
 
+get_recommendations:
+  name: Get Recommendations
+  description: Get similar items for a specific media item.
+  fields:
+    item_id:
+      name: Item ID
+      description: The Jellyfin Item ID to get recommendations for.
+      required: true
+      selector:
+        text:
+    limit:
+      name: Limit
+      description: Maximum number of results to return (default 5).
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 20
+          mode: box
+
