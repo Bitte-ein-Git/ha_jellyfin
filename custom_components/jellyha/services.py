@@ -609,3 +609,49 @@ async def async_register_services(hass: HomeAssistant) -> None:
             schema=GET_RECOMMENDATIONS_SCHEMA,
             supports_response=SupportsResponse.ONLY,
         )
+
+    GET_ITEM_SCHEMA = vol.Schema(
+        {
+            vol.Required("item_id"): cv.string,
+        }
+    )
+
+    async def async_get_item(call: ServiceCall) -> ServiceResponse:
+        """Get full details for an item."""
+        item_id = call.data["item_id"]
+
+        # Find first loaded config entry for JellyHA
+        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
+        coordinator = None
+        for entry in jellyha_entries:
+            if hasattr(entry, "runtime_data") and entry.runtime_data:
+                coordinator = entry.runtime_data.library
+                break
+        
+        if not coordinator or not coordinator._api:
+            raise ValueError("No JellyHA integration loaded")
+            
+        user_id = coordinator.entry.data.get("user_id")
+        if not user_id:
+             raise ValueError("No user ID found in config entry")
+
+        try:
+            item = await coordinator._api.get_item(
+                user_id=user_id,
+                item_id=item_id,
+            )
+        except Exception as err:
+            _LOGGER.error("Get Item failed: %s", err)
+            raise ValueError(f"Get Item failed: {err}") from err
+
+        # Return full item dictionary directly
+        return {"item": item}
+
+    if not hass.services.has_service(DOMAIN, "get_item"):
+        hass.services.async_register(
+            DOMAIN,
+            "get_item",
+            async_get_item,
+            schema=GET_ITEM_SCHEMA,
+            supports_response=SupportsResponse.ONLY,
+        )

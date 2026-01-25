@@ -231,7 +231,10 @@ class JellyfinApiClient:
 
     async def get_item(self, user_id: str, item_id: str) -> dict[str, Any]:
         """Get details for a single item."""
-        return await self._request("GET", f"/Users/{user_id}/Items/{item_id}")
+        params = {
+            "Fields": "Chapters,DateCreated,Genres,MediaStreams,Overview,ParentId,Path,People,ProviderIds,PrimaryImageAspectRatio,RemoteTrailers,SortName,Studios,Taglines,TrailerUrls,UserData,SeasonUserData,OfficialRating,CommunityRating,CumulativeRunTimeTicks,RunTimeTicks,ProductionYear,PremiereDate,ExternalUrls"
+        }
+        return await self._request("GET", f"/Users/{user_id}/Items/{item_id}", params=params)
 
     async def get_sessions(self) -> list[dict[str, Any]]:
         """Get all active sessions."""

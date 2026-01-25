@@ -216,3 +216,14 @@ get_recommendations:
           max: 20
           mode: box
 
+get_item:
+  name: Get Item Details
+  description: Get full details for a specific media item.
+  fields:
+    item_id:
+      name: Item ID
+      description: The Jellyfin Item ID to retrieve.
+      required: true
+      selector:
+        text:
+
