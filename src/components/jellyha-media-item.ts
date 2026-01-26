@@ -377,6 +377,17 @@ export class JellyHAMediaItem extends LitElement {
     this._isHoldActive = false;
     this._holdTimer = window.setTimeout(() => {
       this._isHoldActive = true;
+
+      // Trigger visual pulse
+      const poster = this.shadowRoot?.querySelector(`#poster-${this.item.id}`);
+      if (poster) {
+        poster.classList.add('hold-pulse');
+        // Remove class after animation completes to allow re-triggering
+        setTimeout(() => {
+          poster.classList.remove('hold-pulse');
+        }, 300);
+      }
+
       this._dispatchHaptic('medium');
       this._fireAction('hold');
     }, 500);

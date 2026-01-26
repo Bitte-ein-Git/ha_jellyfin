@@ -658,6 +658,16 @@ export const cardStyles = css`
   }
 
   /* Press effect for mobile/touch */
+  /* Pulse animation for confirming hold action */
+  @keyframes holdPulse {
+    0% { transform: scale(0.96); }
+    50% { transform: scale(0.92); }
+    100% { transform: scale(0.96); }
+  }
+
+  .poster-container.hold-pulse {
+    animation: holdPulse 0.3s ease-in-out;
+  }
   .media-item.active-press .poster-container,
   .media-item:active .poster-container {
     transform: scale(0.96);

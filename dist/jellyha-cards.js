@@ -3,7 +3,7 @@
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const Y = globalThis, ie = Y.ShadowRoot && (Y.ShadyCSS === void 0 || Y.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype, ae = Symbol(), ce = /* @__PURE__ */ new WeakMap();
+const q = globalThis, ie = q.ShadowRoot && (q.ShadyCSS === void 0 || q.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype, ae = Symbol(), ce = /* @__PURE__ */ new WeakMap();
 let xe = class {
   constructor(e, i, a) {
     if (this._$cssResult$ = !0, a !== ae) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
@@ -32,7 +32,7 @@ const je = (t) => new xe(typeof t == "string" ? t : t + "", void 0, ae), F = (t,
 }, Te = (t, e) => {
   if (ie) t.adoptedStyleSheets = e.map((i) => i instanceof CSSStyleSheet ? i : i.styleSheet);
   else for (const i of e) {
-    const a = document.createElement("style"), o = Y.litNonce;
+    const a = document.createElement("style"), o = q.litNonce;
     o !== void 0 && a.setAttribute("nonce", o), a.textContent = i.cssText, t.appendChild(a);
   }
 }, he = ie ? (t) => t : (t) => t instanceof CSSStyleSheet ? ((e) => {
@@ -45,7 +45,7 @@ const je = (t) => new xe(typeof t == "string" ? t : t + "", void 0, ae), F = (t,
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const { is: Ee, defineProperty: ze, getOwnPropertyDescriptor: Me, getOwnPropertyNames: De, getOwnPropertySymbols: Ie, getPrototypeOf: Oe } = Object, Z = globalThis, pe = Z.trustedTypes, Ne = pe ? pe.emptyScript : "", Re = Z.reactiveElementPolyfillSupport, O = (t, e) => t, q = { toAttribute(t, e) {
+const { is: Ee, defineProperty: ze, getOwnPropertyDescriptor: Me, getOwnPropertyNames: De, getOwnPropertySymbols: Ie, getPrototypeOf: Oe } = Object, Z = globalThis, pe = Z.trustedTypes, Ne = pe ? pe.emptyScript : "", Re = Z.reactiveElementPolyfillSupport, O = (t, e) => t, Y = { toAttribute(t, e) {
   switch (e) {
     case Boolean:
       t = t ? Ne : null;
@@ -73,7 +73,7 @@ const { is: Ee, defineProperty: ze, getOwnPropertyDescriptor: Me, getOwnProperty
       }
   }
   return i;
-} }, oe = (t, e) => !Ee(t, e), _e = { attribute: !0, type: String, converter: q, reflect: !1, useDefault: !1, hasChanged: oe };
+} }, oe = (t, e) => !Ee(t, e), _e = { attribute: !0, type: String, converter: Y, reflect: !1, useDefault: !1, hasChanged: oe };
 Symbol.metadata ??= Symbol("metadata"), Z.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
 let E = class extends HTMLElement {
   static addInitializer(e) {
@@ -172,14 +172,14 @@ let E = class extends HTMLElement {
   _$ET(e, i) {
     const a = this.constructor.elementProperties.get(e), o = this.constructor._$Eu(e, a);
     if (o !== void 0 && a.reflect === !0) {
-      const s = (a.converter?.toAttribute !== void 0 ? a.converter : q).toAttribute(i, a.type);
+      const s = (a.converter?.toAttribute !== void 0 ? a.converter : Y).toAttribute(i, a.type);
       this._$Em = e, s == null ? this.removeAttribute(o) : this.setAttribute(o, s), this._$Em = null;
     }
   }
   _$AK(e, i) {
     const a = this.constructor, o = a._$Eh.get(e);
     if (o !== void 0 && this._$Em !== o) {
-      const s = a.getPropertyOptions(o), r = typeof s.converter == "function" ? { fromAttribute: s.converter } : s.converter?.fromAttribute !== void 0 ? s.converter : q;
+      const s = a.getPropertyOptions(o), r = typeof s.converter == "function" ? { fromAttribute: s.converter } : s.converter?.fromAttribute !== void 0 ? s.converter : Y;
       this._$Em = o;
       const h = r.fromAttribute(i, s.type);
       this[o] = h ?? this._$Ej?.get(o) ?? h, this._$Em = null;
@@ -262,7 +262,7 @@ E.elementStyles = [], E.shadowRootOptions = { mode: "open" }, E[O("elementProper
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const se = globalThis, ge = (t) => t, V = se.trustedTypes, ue = V ? V.createPolicy("lit-html", { createHTML: (t) => t }) : void 0, $e = "$lit$", S = `lit$${Math.random().toFixed(9).slice(2)}$`, ke = "?" + S, He = `<${ke}>`, A = document, N = () => A.createComment(""), R = (t) => t === null || typeof t != "object" && typeof t != "function", re = Array.isArray, Le = (t) => re(t) || typeof t?.[Symbol.iterator] == "function", Q = `[ 	
+const se = globalThis, ge = (t) => t, V = se.trustedTypes, ue = V ? V.createPolicy("lit-html", { createHTML: (t) => t }) : void 0, $e = "$lit$", S = `lit$${Math.random().toFixed(9).slice(2)}$`, ke = "?" + S, Le = `<${ke}>`, A = document, N = () => A.createComment(""), R = (t) => t === null || typeof t != "object" && typeof t != "function", re = Array.isArray, He = (t) => re(t) || typeof t?.[Symbol.iterator] == "function", Q = `[ 	
 \f\r]`, I = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, me = /-->/g, fe = />/g, C = RegExp(`>|${Q}(?:([^\\s"'>=/]+)(${Q}*=${Q}*(?:[^ 	
 \f\r"'\`<>=]|("|')|))|$)`, "g"), we = /'/g, ye = /"/g, Se = /^(?:script|style|textarea|title)$/i, Ue = (t) => (e, ...i) => ({ _$litType$: t, strings: e, values: i }), n = Ue(1), z = Symbol.for("lit-noChange"), d = Symbol.for("lit-nothing"), ve = /* @__PURE__ */ new WeakMap(), P = A.createTreeWalker(A, 129);
 function Ce(t, e) {
@@ -277,17 +277,17 @@ const Fe = (t, e) => {
     let _, g, p = -1, m = 0;
     for (; m < c.length && (r.lastIndex = m, g = r.exec(c), g !== null); ) m = r.lastIndex, r === I ? g[1] === "!--" ? r = me : g[1] !== void 0 ? r = fe : g[2] !== void 0 ? (Se.test(g[2]) && (o = RegExp("</" + g[2], "g")), r = C) : g[3] !== void 0 && (r = C) : r === C ? g[0] === ">" ? (r = o ?? I, p = -1) : g[1] === void 0 ? p = -2 : (p = r.lastIndex - g[2].length, _ = g[1], r = g[3] === void 0 ? C : g[3] === '"' ? ye : we) : r === ye || r === we ? r = C : r === me || r === fe ? r = I : (r = C, o = void 0);
     const y = r === C && t[h + 1].startsWith("/>") ? " " : "";
-    s += r === I ? c + He : p >= 0 ? (a.push(_), c.slice(0, p) + $e + c.slice(p) + S + y) : c + S + (p === -2 ? h : y);
+    s += r === I ? c + Le : p >= 0 ? (a.push(_), c.slice(0, p) + $e + c.slice(p) + S + y) : c + S + (p === -2 ? h : y);
   }
   return [Ce(t, s + (t[i] || "<?>") + (e === 2 ? "</svg>" : e === 3 ? "</math>" : "")), a];
 };
-class H {
+class L {
   constructor({ strings: e, _$litType$: i }, a) {
     let o;
     this.parts = [];
     let s = 0, r = 0;
     const h = e.length - 1, c = this.parts, [_, g] = Fe(e, i);
-    if (this.el = H.createElement(_, a), P.currentNode = this.el.content, i === 2 || i === 3) {
+    if (this.el = L.createElement(_, a), P.currentNode = this.el.content, i === 2 || i === 3) {
       const p = this.el.content.firstChild;
       p.replaceWith(...p.childNodes);
     }
@@ -371,7 +371,7 @@ class B {
     return this._$AB;
   }
   _$AI(e, i = this) {
-    e = M(this, e, i), R(e) ? e === d || e == null || e === "" ? (this._$AH !== d && this._$AR(), this._$AH = d) : e !== this._$AH && e !== z && this._(e) : e._$litType$ !== void 0 ? this.$(e) : e.nodeType !== void 0 ? this.T(e) : Le(e) ? this.k(e) : this._(e);
+    e = M(this, e, i), R(e) ? e === d || e == null || e === "" ? (this._$AH !== d && this._$AR(), this._$AH = d) : e !== this._$AH && e !== z && this._(e) : e._$litType$ !== void 0 ? this.$(e) : e.nodeType !== void 0 ? this.T(e) : He(e) ? this.k(e) : this._(e);
   }
   O(e) {
     return this._$AA.parentNode.insertBefore(e, this._$AB);
@@ -383,7 +383,7 @@ class B {
     this._$AH !== d && R(this._$AH) ? this._$AA.nextSibling.data = e : this.T(A.createTextNode(e)), this._$AH = e;
   }
   $(e) {
-    const { values: i, _$litType$: a } = e, o = typeof a == "number" ? this._$AC(e) : (a.el === void 0 && (a.el = H.createElement(Ce(a.h, a.h[0]), this.options)), a);
+    const { values: i, _$litType$: a } = e, o = typeof a == "number" ? this._$AC(e) : (a.el === void 0 && (a.el = L.createElement(Ce(a.h, a.h[0]), this.options)), a);
     if (this._$AH?._$AD === o) this._$AH.p(i);
     else {
       const s = new Be(o, this), r = s.u(this.options);
@@ -392,7 +392,7 @@ class B {
   }
   _$AC(e) {
     let i = ve.get(e.strings);
-    return i === void 0 && ve.set(e.strings, i = new H(e)), i;
+    return i === void 0 && ve.set(e.strings, i = new L(e)), i;
   }
   k(e) {
     re(this._$AH) || (this._$AH = [], this._$AR());
@@ -476,8 +476,8 @@ class Je {
     M(this, e);
   }
 }
-const Ye = se.litHtmlPolyfillSupport;
-Ye?.(H, B), (se.litHtmlVersions ??= []).push("3.3.2");
+const qe = se.litHtmlPolyfillSupport;
+qe?.(L, B), (se.litHtmlVersions ??= []).push("3.3.2");
 const Pe = (t, e, i) => {
   const a = i?.renderBefore ?? e;
   let o = a._$litPart$;
@@ -516,8 +516,8 @@ class $ extends E {
   }
 }
 $._$litElement$ = !0, $.finalized = !0, ne.litElementHydrateSupport?.({ LitElement: $ });
-const qe = ne.litElementPolyfillSupport;
-qe?.({ LitElement: $ });
+const Ye = ne.litElementPolyfillSupport;
+Ye?.({ LitElement: $ });
 (ne.litElementVersions ??= []).push("4.2.2");
 /**
  * @license
@@ -534,7 +534,7 @@ const D = (t) => (e, i) => {
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const Ve = { attribute: !0, type: String, converter: q, reflect: !1, hasChanged: oe }, Ze = (t = Ve, e, i) => {
+const Ve = { attribute: !0, type: String, converter: Y, reflect: !1, hasChanged: oe }, Ze = (t = Ve, e, i) => {
   const { kind: a, metadata: o } = i;
   let s = globalThis.litPropertyMetadata.get(o);
   if (s === void 0 && globalThis.litPropertyMetadata.set(o, s = /* @__PURE__ */ new Map()), a === "setter" && ((t = Object.create(t)).wrapped = !0), s.set(i.name, t), a === "accessor") {
@@ -1269,6 +1269,16 @@ const Ae = F`
   }
 
   /* Press effect for mobile/touch */
+  /* Pulse animation for confirming hold action */
+  @keyframes holdPulse {
+    0% { transform: scale(0.96); }
+    50% { transform: scale(0.92); }
+    100% { transform: scale(0.96); }
+  }
+
+  .poster-container.hold-pulse {
+    animation: holdPulse 0.3s ease-in-out;
+  }
   .media-item.active-press .poster-container,
   .media-item:active .poster-container {
     transform: scale(0.96);
@@ -1986,7 +1996,7 @@ const Ae = F`
     "editor.now_playing_sensor": "Now Playing Sensor",
     "editor.auto": "Auto",
     "editor.show_search": "Show Search Bar",
-    "search.placeholder_title": "Search title...",
+    "search.placeholder_title": "Search Title",
     "search.placeholder_genre": "Genre",
     "search.all_genres": "All Genres"
   },
@@ -2065,7 +2075,7 @@ const Ae = F`
     "editor.now_playing_sensor": "Sensor für aktuelle Wiedergabe",
     "editor.auto": "Automatisch",
     "editor.show_search": "Suchleiste anzeigen",
-    "search.placeholder_title": "Titel suchen...",
+    "search.placeholder_title": "Titel suchen",
     "search.placeholder_genre": "Genre",
     "search.all_genres": "Alle Genres"
   },
@@ -2144,7 +2154,7 @@ const Ae = F`
     "editor.now_playing_sensor": "Capteur de lecture en cours",
     "editor.auto": "Auto",
     "editor.show_search": "Afficher la barre de recherche",
-    "search.placeholder_title": "Rechercher un titre...",
+    "search.placeholder_title": "Rechercher un titre",
     "search.placeholder_genre": "Genre",
     "search.all_genres": "Tous les genres"
   },
@@ -2223,7 +2233,7 @@ const Ae = F`
     "editor.now_playing_sensor": "Sensor de reproducción actual",
     "editor.auto": "Auto",
     "editor.show_search": "Mostrar barra de búsqueda",
-    "search.placeholder_title": "Buscar título...",
+    "search.placeholder_title": "Buscar título",
     "search.placeholder_genre": "Género",
     "search.all_genres": "Todos los géneros"
   },
@@ -2302,7 +2312,7 @@ const Ae = F`
     "editor.now_playing_sensor": "Sensore in riproduzione",
     "editor.auto": "Auto",
     "editor.show_search": "Mostra barra di ricerca",
-    "search.placeholder_title": "Cerca titolo...",
+    "search.placeholder_title": "Cerca titolo",
     "search.placeholder_genre": "Genere",
     "search.all_genres": "Tutti i generi"
   },
@@ -2381,7 +2391,7 @@ const Ae = F`
     "editor.now_playing_sensor": 'Sensor "Nu aan het spelen"',
     "editor.auto": "Auto",
     "editor.show_search": "Zoekbalk tonen",
-    "search.placeholder_title": "Zoek titel...",
+    "search.placeholder_title": "Zoek titel",
     "search.placeholder_genre": "Genre",
     "search.all_genres": "Alle genres"
   },
@@ -2460,7 +2470,7 @@ const Ae = F`
     "editor.now_playing_sensor": "Senzor predvajanja",
     "editor.auto": "Avtomatsko",
     "editor.show_search": "Prikaži iskalno vrstico",
-    "search.placeholder_title": "Išči naslov...",
+    "search.placeholder_title": "Išči naslov",
     "search.placeholder_genre": "Žanr",
     "search.all_genres": "Vsi žanri"
   }
@@ -2992,7 +3002,7 @@ function ot(t, e, i) {
   });
   t.dispatchEvent(a);
 }
-let L = class extends $ {
+let H = class extends $ {
   setConfig(t) {
     this._config = t;
   }
@@ -3480,7 +3490,7 @@ let L = class extends $ {
     this._config = i, ot(this, "config-changed", { config: i });
   }
 };
-L.styles = F`
+H.styles = F`
     .form-row {
       margin-bottom: 16px;
     }
@@ -3508,13 +3518,13 @@ L.styles = F`
   `;
 le([
   x({ attribute: !1 })
-], L.prototype, "hass", 2);
+], H.prototype, "hass", 2);
 le([
   u()
-], L.prototype, "_config", 2);
-L = le([
+], H.prototype, "_config", 2);
+H = le([
   D("jellyha-library-editor")
-], L);
+], H);
 var st = Object.defineProperty, rt = Object.getOwnPropertyDescriptor, b = (t, e, i, a) => {
   for (var o = a > 1 ? void 0 : a ? rt(e, i) : e, s = t.length - 1, r; s >= 0; s--)
     (r = t[s]) && (o = (a ? r(e, i, o) : r(o)) || o);
@@ -3769,7 +3779,11 @@ let v = class extends $ {
   }
   _startHoldTimer() {
     this._pressStartTime = Date.now(), this._isHoldActive = !1, this._holdTimer = window.setTimeout(() => {
-      this._isHoldActive = !0, this._dispatchHaptic("medium"), this._fireAction("hold");
+      this._isHoldActive = !0;
+      const t = this.shadowRoot?.querySelector(`#poster-${this.item.id}`);
+      t && (t.classList.add("hold-pulse"), setTimeout(() => {
+        t.classList.remove("hold-pulse");
+      }, 300)), this._dispatchHaptic("medium"), this._fireAction("hold");
     }, 500);
   }
   _clearHoldTimer() {
