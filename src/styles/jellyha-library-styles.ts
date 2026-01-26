@@ -172,6 +172,10 @@ export const cardStyles = css`
     padding: 0;
     padding-top: 12px;
     overflow: hidden;
+    flex: 1; /* Allow content to fill remaining space */
+    display: flex; /* Ensure children can fill height */
+    flex-direction: column;
+    min-height: 0; /* Critical for scrolling inside flex items */
   }
 
   /* Carousel Layout - Responsive with auto-fit */
@@ -342,8 +346,10 @@ export const cardStyles = css`
   /* List Wrapper for pagination */
   .list-wrapper {
     position: relative;
-    overflow: hidden;
-    touch-action: pan-y; /* Allow vertical scroll, handle horizontal swipe ourselves */
+    overflow-y: auto; /* Enable vertical scrolling */
+    height: 100%; /* Fill available space */
+    touch-action: pan-y;
+    overscroll-behavior-y: contain; /* Prevent scroll chaining */
   }
 
   /* Grid Wrapper for pagination */
