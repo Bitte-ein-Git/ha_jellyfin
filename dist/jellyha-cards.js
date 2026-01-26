@@ -723,8 +723,9 @@ const Ae = F`
   }
 
   .search-select option {
-    background: var(--jf-card-bg);
-    color: var(--jf-text);
+    /* Use solid background from theme to avoid transparency issues in darker themes */
+    background: var(--paper-listbox-background-color, var(--primary-background-color, #1c1c1c));
+    color: var(--primary-text-color);
   }
 
   .search-input:focus,
@@ -4179,9 +4180,16 @@ let f = class extends $ {
   _handleScroll(t) {
     const e = t.target, i = e.scrollWidth, a = e.clientWidth, o = e.scrollLeft, s = i > a + 10;
     if (s !== this._hasScrollableContent && (this._hasScrollableContent = s), s) {
-      const r = i - a;
-      let h = o / r;
-      (r - o < 10 || h > 0.98) && (h = 1), (o < 10 || h < 0.02) && (h = 0), h = Math.min(1, Math.max(0, h)), this._scrollProgress = h;
+      let r = 0;
+      const h = this._config.enable_pagination === !1 && (this._config.auto_swipe_interval || 0) > 0;
+      if (h) {
+        const c = i / 2;
+        r = o / c;
+      } else {
+        const c = i - a;
+        r = o / c;
+      }
+      !h && (i - a - o < 10 || r > 0.98) && (r = 1), (o < 10 || r < 0.02) && (r = 0), r = Math.min(1, Math.max(0, r)), this._scrollProgress = r;
     }
   }
   // Render scroll indicator for non-paginated scrollable content

@@ -112,8 +112,9 @@ export const cardStyles = css`
   }
 
   .search-select option {
-    background: var(--jf-card-bg);
-    color: var(--jf-text);
+    /* Use solid background from theme to avoid transparency issues in darker themes */
+    background: var(--paper-listbox-background-color, var(--primary-background-color, #1c1c1c));
+    color: var(--primary-text-color);
   }
 
   .search-input:focus,

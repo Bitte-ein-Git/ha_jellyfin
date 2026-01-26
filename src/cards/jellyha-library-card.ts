@@ -639,10 +639,22 @@ export class JellyHALibraryCard extends LitElement {
 
     // Calculate scroll progress (0 to 1)
     if (isScrollable) {
-      const maxScroll = scrollWidth - clientWidth;
-      let progress = scrollLeft / maxScroll;
+      let progress = 0;
+      // Check if we are in infinite scroll mode (pagination disabled + auto swipe enabled)
+      const isInfiniteScroll = this._config.enable_pagination === false && (this._config.auto_swipe_interval || 0) > 0;
+
+      if (isInfiniteScroll) {
+        // In infinite scroll, content is duplicated, so the full loop is half the scroll width
+        const loopThreshold = scrollWidth / 2;
+        progress = scrollLeft / loopThreshold;
+      } else {
+        const maxScroll = scrollWidth - clientWidth;
+        progress = scrollLeft / maxScroll;
+      }
+
       // Round to 1 when close to end (within 10px or 2%)
-      if (maxScroll - scrollLeft < 10 || progress > 0.98) {
+      // For infinite scroll, we just clamp, as it will reset automatically
+      if (!isInfiniteScroll && (scrollWidth - clientWidth - scrollLeft < 10 || progress > 0.98)) {
         progress = 1;
       }
       // Round to 0 when at start
