@@ -109,6 +109,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: JellyHAConfigEntry) -> b
 
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Listen for media events to trigger library refresh
+    async def _handle_media_event(event):
+        """Handle media events to trigger library refresh."""
+        event_data = event.data
+        event_type = event_data.get("type")
+        
+        # Only refresh on stop (or maybe pause if we want to be aggressive, but stop is key for Next Up)
+        if event_type == "media_stop":
+            _LOGGER.debug("Media stop event received, requesting library refresh for Next Up update")
+            # We want to refresh the library to update "Next Up" list
+            # A short delay might be needed for Jellyfin to update its internal state?
+            # Let's try immediate first, coordinator handles debouncing usually if built-in, 
+            # but here we force refresh.
+            await lib_coordinator.async_request_refresh()
+
+    entry.async_on_unload(
+        hass.bus.async_listen(f"{DOMAIN}_event", _handle_media_event)
+    )
     
     return True
 

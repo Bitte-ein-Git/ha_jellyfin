@@ -51,6 +51,100 @@ export const cardStyles = css`
     color: var(--jf-text);
   }
 
+  /* Search Bar Styles */
+  .search-container {
+    padding: 16px 16px 8px 16px; /* Increased top padding */
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .search-input-wrapper,
+  .search-select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-input-wrapper {
+    flex: 1; /* Title search takes remaining space */
+  }
+
+  .search-select-wrapper {
+    flex: 0 0 160px; /* Wider genre picker */
+  }
+
+  .search-input,
+  .search-select {
+    width: 100%;
+    /* Use HA input variables */
+    background: var(--input-fill-color, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+    border-radius: 20px; /* More round edges */
+    padding: 8px 32px 8px 36px;
+    color: var(--primary-text-color);
+    font-size: 1rem;
+    font-family: var(--mdc-typography-body1-font-family, var(--mdc-typography-font-family, Roboto, sans-serif)); /* Match HA font */
+    outline: none;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    height: 42px; /* Ensure same height */
+    appearance: none;
+    -webkit-appearance: none;
+    box-sizing: border-box; /* Ensure padding doesn't affect height width calculation */
+  }
+
+  .search-select {
+    padding-right: 32px;
+    padding-left: 16px;
+    cursor: pointer;
+  }
+
+  .search-input:focus,
+  .search-select:focus {
+    background: var(--input-fill-color-focus, rgba(255, 255, 255, 0.1));
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 1px var(--primary-color); /* Highlight focus */
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 12px; /* Adjusted for rounded corners */
+    color: var(--secondary-text-color);
+    pointer-events: none;
+    --mdc-icon-size: 20px;
+  }
+
+  .select-icon {
+    position: absolute;
+    right: 12px;
+    color: var(--secondary-text-color);
+    pointer-events: none;
+    --mdc-icon-size: 20px;
+  }
+
+  .clear-search {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--secondary-text-color);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    border-radius: 50%;
+    transition: color 0.2s;
+  }
+
+  .clear-search:hover {
+    color: var(--primary-text-color);
+    background: rgba(var(--rgb-primary-text-color), 0.1);
+  }
+
+  .clear-search ha-icon {
+    --mdc-icon-size: 18px;
+  }
+
   /* Theme currently playing title */
   .media-item.playing .media-title,
   .media-item.playing .list-title {
@@ -963,7 +1057,7 @@ export const cardStyles = css`
   .now-playing-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
     justify-content: center;

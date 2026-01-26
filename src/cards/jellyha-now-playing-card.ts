@@ -155,7 +155,11 @@ export class JellyHANowPlayingCard extends LitElement {
                                 ${this._overflowState < 2 ? html`
                                     <div class="meta-container">
                                         ${this._config.show_media_type_badge !== false ? html`
-                                            <span class="badge meta-priority-4 ${attributes.media_type?.toLowerCase()}">${attributes.media_type}</span>
+                                            <span class="badge meta-priority-4 ${attributes.media_type?.toLowerCase()}">
+                                                ${(attributes.media_type?.toLowerCase() === 'episode' && attributes.season !== undefined && attributes.episode !== undefined)
+                        ? `S${String(attributes.season).padStart(2, '0')}E${String(attributes.episode).padStart(2, '0')}`
+                        : attributes.media_type}
+                                            </span>
                                         ` : nothing}
                                         ${this._config.show_year !== false && attributes.year ? html`
                                             <span class="meta-item meta-priority-3">${attributes.year}</span>

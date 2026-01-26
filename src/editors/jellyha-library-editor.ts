@@ -216,7 +216,8 @@ export class JellyHALibraryEditor extends LitElement {
               <mwc-list-item value="none">${localize(lang, 'editor.action_none')}</mwc-list-item>
             </ha-select>
           </div>
-        
+        </div>
+
         <div class="side-by-side">
           <div class="form-row">
             <ha-select
@@ -232,20 +233,23 @@ export class JellyHALibraryEditor extends LitElement {
               <mwc-list-item value="none">${localize(lang, 'editor.action_none')}</mwc-list-item>
             </ha-select>
           </div>
-        </div>
+
+          ${clickAction === 'cast' || holdAction === 'cast' || doubleTapAction === 'cast'
+        ? html`
+                <div class="form-row">
+                  <ha-entity-picker
+                    .hass=${this.hass}
+                    .value=${this._config.default_cast_device}
+                    .includeDomains=${['media_player']}
+                    @value-changed=${this._defaultCastDeviceChanged}
+                  ></ha-entity-picker>
+                </div>
+              `
+        : html`<div></div>`}
         </div>
 
-        ${clickAction === 'cast' || holdAction === 'cast'
+        ${clickAction === 'cast' || holdAction === 'cast' || doubleTapAction === 'cast'
         ? html`
-              <div class="form-row">
-                <ha-selector
-                  .hass=${this.hass}
-                  .selector=${{ entity: { domain: 'media_player' } }}
-                  .value=${this._config.default_cast_device}
-                  label="${localize(lang, 'editor.default_cast_device')}"
-                  @value-changed=${this._defaultCastDeviceChanged}
-                ></ha-selector>
-              </div>
               <div class="checkbox-row">
                 <ha-switch
                   .checked=${this._config.show_now_playing !== false}
@@ -328,6 +332,14 @@ export class JellyHALibraryEditor extends LitElement {
       <span>${localize(lang, 'editor.show_watched_status')}</span>
     </div>
 
+    <div class="checkbox-row">
+      <ha-switch
+        .checked=${this._config.show_search === true}
+        @change=${this._showSearchChanged}
+      ></ha-switch>
+      <span>${localize(lang, 'editor.show_search')}</span>
+    </div>
+
     <div class="side-by-side">
       <div class="form-row">
         <ha-select
@@ -342,21 +354,25 @@ export class JellyHALibraryEditor extends LitElement {
       </div>
 
       <div class="form-row">
-        <ha-select
-          label="${localize(lang, 'editor.sort_order')}"
-          .value=${this._config.sort_option || 'date_added_desc'}
-          @selected=${this._sortOptionChanged}
-          @closed=${(e: Event) => e.stopPropagation()}
-        >
-          <mwc-list-item value="date_added_desc">${localize(lang, 'editor.sort_date_added_desc')}</mwc-list-item>
-          <mwc-list-item value="date_added_asc">${localize(lang, 'editor.sort_date_added_asc')}</mwc-list-item>
-          <mwc-list-item value="title_asc">${localize(lang, 'editor.sort_title_asc')}</mwc-list-item>
-          <mwc-list-item value="title_desc">${localize(lang, 'editor.sort_title_desc')}</mwc-list-item>
-          <mwc-list-item value="year_desc">${localize(lang, 'editor.sort_year_desc')}</mwc-list-item>
-          <mwc-list-item value="year_asc">${localize(lang, 'editor.sort_year_asc')}</mwc-list-item>
-          <mwc-list-item value="last_played_desc">${localize(lang, 'editor.sort_last_played_desc')}</mwc-list-item>
-          <mwc-list-item value="last_played_asc">${localize(lang, 'editor.sort_last_played_asc')}</mwc-list-item>
-        </ha-select>
+        ${this._config.media_type !== 'next_up'
+        ? html`
+            <ha-select
+            label="${localize(lang, 'editor.sort_order')}"
+            .value=${this._config.sort_option || 'date_added_desc'}
+            @selected=${this._sortOptionChanged}
+            @closed=${(e: Event) => e.stopPropagation()}
+            >
+            <mwc-list-item value="date_added_desc">${localize(lang, 'editor.sort_date_added_desc')}</mwc-list-item>
+            <mwc-list-item value="date_added_asc">${localize(lang, 'editor.sort_date_added_asc')}</mwc-list-item>
+            <mwc-list-item value="title_asc">${localize(lang, 'editor.sort_title_asc')}</mwc-list-item>
+            <mwc-list-item value="title_desc">${localize(lang, 'editor.sort_title_desc')}</mwc-list-item>
+            <mwc-list-item value="year_desc">${localize(lang, 'editor.sort_year_desc')}</mwc-list-item>
+            <mwc-list-item value="year_asc">${localize(lang, 'editor.sort_year_asc')}</mwc-list-item>
+            <mwc-list-item value="last_played_desc">${localize(lang, 'editor.sort_last_played_desc')}</mwc-list-item>
+            <mwc-list-item value="last_played_asc">${localize(lang, 'editor.sort_last_played_asc')}</mwc-list-item>
+            </ha-select>
+        `
+        : html`<div></div>`}
       </div>
     </div>
 
@@ -408,6 +424,8 @@ export class JellyHALibraryEditor extends LitElement {
         <span>${localize(lang, 'editor.filter_new_items')}</span>
       </div>
     </div>
+
+
   </div>
 `;
   }
@@ -574,6 +592,11 @@ export class JellyHALibraryEditor extends LitElement {
   private _filterNewlyAddedChanged(e: Event): void {
     const target = e.target as HTMLInputElement;
     this._updateConfig('filter_newly_added', target.checked);
+  }
+
+  private _showSearchChanged(e: Event): void {
+    const target = e.target as HTMLInputElement;
+    this._updateConfig('show_search', target.checked);
   }
 
   private _sortOptionChanged(e: Event): void {

@@ -100,6 +100,8 @@ export class JellyHALibraryCard extends LitElement {
   @state() private _error?: string;
   @state() private _lastUpdate: string = '';
   @state() private _mostRecentNextUpItemId?: string;
+  @state() private _searchQuery = '';
+  @state() private _searchGenre = '';
   @query('jellyha-item-details-modal') private _modal!: JellyHAItemDetailsModal;
 
   private _touchStartX: number = 0;
@@ -823,7 +825,7 @@ export class JellyHALibraryCard extends LitElement {
     }
 
     // Always update if internal carousel state changes or items change
-    if (changedProps.has('_currentPage') || changedProps.has('_itemsPerPage') || changedProps.has('_items') || changedProps.has('_error')) {
+    if (changedProps.has('_currentPage') || changedProps.has('_itemsPerPage') || changedProps.has('_items') || changedProps.has('_error') || changedProps.has('_searchQuery') || changedProps.has('_searchGenre')) {
       return true;
     }
 
@@ -969,6 +971,7 @@ export class JellyHALibraryCard extends LitElement {
                   </div>
                 `
         : nothing}
+            ${this._config.show_search ? this._renderSearchBar(items) : nothing}
             <div class="card-content">
               ${items.length === 0
         ? this._renderEmpty()
@@ -986,6 +989,17 @@ export class JellyHALibraryCard extends LitElement {
   private _filterItems(items: MediaItem[]): MediaItem[] {
     let filtered = items;
 
+    // Filter by search query
+    if (this._searchQuery) {
+      const q = this._searchQuery.toLowerCase();
+      filtered = filtered.filter((item) => item.name.toLowerCase().includes(q));
+    }
+
+    // Filter by genre
+    if (this._searchGenre) {
+      filtered = filtered.filter((item) => item.genres && item.genres.includes(this._searchGenre));
+    }
+
     // Filter by media type
     if (this._config.media_type === 'movies') {
       filtered = filtered.filter((item) => item.type === 'Movie');
@@ -994,6 +1008,18 @@ export class JellyHALibraryCard extends LitElement {
     } else if (this._config.media_type === 'next_up') {
       // Next Up items are already filtered by backend
       // But we might want to ensure they are valid
+
+      // CRITICAL: For Next Up, we MUST respect the server's order (which is by Last Played).
+      // If we let the card re-sort by default (Date Added), it scrambles the order.
+      // So we bypass the entire client-side sorting block below.
+
+      // Apply limit based on items_per_page * max_pages (same as below)
+      const maxPages = this._config.max_pages;
+      if (maxPages !== undefined && maxPages !== null && maxPages > 0) {
+        const limit = (this._config.items_per_page || 5) * maxPages;
+        filtered = filtered.slice(0, limit);
+      }
+      return filtered;
     }
 
     // Filter by favorites
@@ -1440,6 +1466,64 @@ export class JellyHALibraryCard extends LitElement {
         defaultCastDevice: this._config.default_cast_device
       });
     }
+  }
+
+  private _handleSearchInput(e: Event): void {
+    const target = e.target as HTMLInputElement;
+    this._searchQuery = target.value;
+    this._currentPage = 0; // Reset to first page
+  }
+
+  private _handleGenreChange(e: Event): void {
+    const target = e.target as HTMLSelectElement;
+    this._searchGenre = target.value;
+    this._currentPage = 0; // Reset to first page
+  }
+
+  private _renderSearchBar(allItems: MediaItem[]): TemplateResult {
+    // Collect all unique genres from the current items (before filtering by search/genre)
+    // to populate the dropdown.
+    // Note: We should probably use 'this._items' (raw items) instead of filtered 'items' passed to renderLayout
+    // to ensure the genre list is complete.
+    const genres = new Set<string>();
+    (this._items || []).forEach(item => {
+      if (item.genres) {
+        item.genres.forEach(g => genres.add(g));
+      }
+    });
+    const sortedGenres = Array.from(genres).sort();
+
+    const lang = this.hass.locale?.language || this.hass.language;
+
+    return html`
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <ha-icon icon="mdi:magnify" class="search-icon"></ha-icon>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="${localize(lang, 'search.placeholder_title')}"
+            .value="${this._searchQuery}"
+            @input="${this._handleSearchInput}"
+          />
+          ${this._searchQuery ? html`
+            <button class="clear-search" @click="${() => { this._searchQuery = ''; this._currentPage = 0; }}">
+              <ha-icon icon="mdi:close"></ha-icon>
+            </button>
+          ` : nothing}
+        </div>
+        
+        <div class="search-select-wrapper">
+          <select class="search-select" @change="${this._handleGenreChange}" .value="${this._searchGenre}">
+             <option value="">${localize(lang, 'search.all_genres')}</option>
+             ${sortedGenres.map(genre => html`
+               <option value="${genre}">${genre}</option>
+             `)}
+          </select>
+          <ha-icon icon="mdi:chevron-down" class="select-icon"></ha-icon>
+        </div>
+      </div>
+    `;
   }
 }
 

@@ -27,11 +27,13 @@ Jellyfin for Home Assistant Custom Integration.
 - 🔗 Click to open in Jellyfin (new tab)
 - ⭐ IMDB ratings for movies, TMDB for TV shows
 - 🆕 "New" badge for recently added items
+- 🔍 Built-in Search Bar with Title and Genre filtering
 - 🔐 Secure login via Username/Password or API Key
 - 🤖 Advanced automation triggers via custom sensors & services
 - 📂 Full integration with Home Assistant Media Browser
 - 💾 Efficient local storage caching (no database bloat)
 - ⚡ Instant loading via WebSocket
+- 🖼️ Fully compatible with custom themes
 - 🌍 7 languages: English, German, French, Spanish, Italian, Dutch, Slovenian
 - 🎛️ Graphical card editor (no YAML required)
 
@@ -39,21 +41,15 @@ Jellyfin for Home Assistant Custom Integration.
 
 JellyHA requires **two installation steps**: installing the integration and adding the dashboard card resource.
 
-## Prerequisites
+### Step 1: Install the Integration
+
+#### Via HACS (Recommended)
 
 Before installing JellyHA, ensure you have **HACS (Home Assistant Community Store)** installed.
 
 Please follow the [official HACS installation guide](https://www.hacs.xyz/docs/use/download/download/) to install HACS on your Home Assistant instance.
 
-### Step 1: Install the Integration
-
-[![My Home Assistant][my-ha-badge]][my-ha-url]
-
-Or
-
 [![Open your Home Assistant instance and open a repository inside the (HACS) Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=JellyHA&category=Integration&owner=zupancicmarko)
-
-#### Via HACS (Recommended)
 
 1. Open HACS in Home Assistant
 2. Go to **Integrations** → **⋮** → **Custom repositories**
@@ -88,10 +84,23 @@ Or
 
 > **⚠️ Note:** Only a single instance of this integration is supported. Please configure it once for your main user.
 
+### Use the link to start the integration setup
+
+[![My Home Assistant][my-ha-badge]][my-ha-url]
+
+Then continue to step 3. and 4. below.
+
+### Manually start the integration setup
+
 1. Go to **Settings** → **Devices & Services** → **Add Integration**
 2. Search for "JellyHA"
-3. Enter your Jellyfin server URL and API key
-4. Select the user and libraries to monitor
+3. Enter your Jellyfin server URL and select authentication method (**Username/Password** or **API Key**)
+4. Enter your Jellyfin API key or credentials
+5. Select the user and libraries to monitor
+6. Click **Submit**
+7. Add Device to the Area (optional)
+
+> **Note:** You can update these credentials later by re-configuring the integration.
 
 
 ### Jellyfin API Key
@@ -102,6 +111,83 @@ To get your Jellyfin API key:
 2. Go to **Administration** → **API Keys**
 3. Click **+** to create a new key
 4. Copy the generated key
+
+
+## Library Card Configuration
+
+Add the **Library Card** to your dashboard:
+
+```yaml
+type: custom:jellyha-library-card
+entity: sensor.jellyha_library
+title: Jellyfin Library
+layout: carousel
+media_type: both
+items_per_page: 3
+max_pages: 5
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `entity` | string | **Required** | The sensor entity ID (e.g. `sensor.jellyha_library`) |
+| `title` | string | `Jellyfin Library` | Card title |
+| `layout` | string | `carousel` | Layout mode: `carousel`, `grid`, or `list` |
+| `media_type` | string | `both` | Filter: `movies`, `series`, `next_up`, or `movies & series` |
+| `columns` | number | `4` | Number of columns for grid & list layout. Changes to number of rows with Grid layout and Auto-Swipe On. |
+| `items_per_page` | number | `3` | Items visible per page. **Note for Height Cut Off:** Use YAML editor to set > 8 rows. |
+| `max_pages` | number | `5` | Maximum number of pages to display (0 = infinite) |
+| `auto_swipe_interval` | number | `0` | Auto-scroll interval in seconds (0 = disabled) |
+| `new_badge_days` | number | `3` | Items added within X days show "New" badge |
+| `click_action` | string | `jellyfin` | Action on click: `jellyfin`, `more-info`, `cast`, `trailer`, or `none` |
+| `hold_action` | string | `cast` | Action on hold: `jellyfin`, `cast`, `more-info`, `trailer`, or `none` |
+| `double_tap_action` | string | `none` | Action on double tap: `jellyfin`, `cast`, `more-info`, `trailer`, or `none` |
+| `default_cast_device` | string | `''` | Default media_player entity for casting |
+| `show_now_playing` | boolean | `true` | Show currently playing item banner if active |
+| `show_title` | boolean | `true` | Show media title |
+| `show_year` | boolean | `true` | Show release year |
+| `show_ratings` | boolean | `true` | Show combined rating |
+| `show_runtime` | boolean | `true` | Show runtime duration |
+| `show_date_added` | boolean | `false` | Show the date item was added in List view |
+| `show_genres` | boolean | `true` | Show genres list |
+| `show_description_on_hover` | boolean | `true` | Show overview when hovering/tapping |
+| `show_media_type_badge` | boolean | `true` | Show Movie/Series badge |
+| `show_watched_status` | boolean | `true` | Show watched checkmarks (Movies) and unplayed counts (Series) |
+| `show_search` | boolean | `false` | Show Search Bar for filtering by Title and Genre |
+| `metadata_position` | string | `below` | Position of text: `below` or `above` image |
+| `sort_option` | string | `date_added_desc` | Sort order options |
+| `enable_pagination` | boolean | `true` | Enable pagination dots |
+| `show_pagination_dots` | boolean | `true` | Enable pagination dots visibility |
+| `status_filter` | string | `all` | Filter Watch Status: `all`, `unwatched`, `watched` |
+| `filter_favorites` | boolean | `false` | Filter Favorites (Show only favorite items) |
+| `filter_newly_added` | boolean | `false` | Filter New Items (Show only new items) |
+
+## Now Playing Card Configuration
+
+The **Now Playing Card** shows a rich media control interface for the currently playing item.
+
+```yaml
+type: custom:jellyha-now-playing-card
+entity: sensor.jellyha_now_playing_username
+title: Now Playing
+show_background: true
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `entity` | string | **Required** | The user-specific Now Playing sensor (e.g. `sensor.jellyha_now_playing_marko`) |
+| `title` | string | `Jellyfin` | Optional title header |
+| `show_background` | boolean | `true` | Show blurred backdrop fanart as background |
+| `show_title` | boolean | `true` | Show media title text |
+| `show_client` | boolean | `true` | Show client device name (e.g. "Chrome") |
+| `show_media_type_badge` | boolean | `true` | Show badge (MOVIE, SERIES, EPISODE) |
+| `show_genres` | boolean | `true` | Show genres list |
+| `show_ratings` | boolean | `true` | Show community rating |
+| `show_runtime` | boolean | `true` | Show runtime duration |
+| `show_year` | boolean | `true` | Show release year |
 
 
 ## Sensors
@@ -140,82 +226,6 @@ JellyHA provides several sensors to monitor your Jellyfin server and library. Al
 |-----------|-------------|-------|------------|
 | `sensor.jellyha_now_playing_[user]` | Real-time monitoring for specific user | `playing`, `paused`, `idle` | `title`, `series_title`, `season`, `episode`, `progress_percent`, `image_url`, `media_type`, `client`, `device_name` |
 
-
-## Library Card Configuration
-
-Add the **Library Card** to your dashboard:
-
-```yaml
-type: custom:jellyha-library-card
-entity: sensor.jellyha_library
-title: Jellyfin Library
-layout: carousel
-media_type: both
-items_per_page: 3
-max_pages: 5
-```
-
-### Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `entity` | string | **Required** | The sensor entity ID (e.g. `sensor.jellyha_library`) |
-| `title` | string | `Jellyfin Library` | Card title |
-| `layout` | string | `carousel` | Layout mode: `carousel`, `grid`, or `list` |
-| `media_type` | string | `both` | Filter: `movies`, `series`, `next_up`, or `both` |
-| `items_per_page` | number | `3` | Items visible per page (carousel) or initial Load (list) or **Rows** (grid). **Note for Grid:** Use YAML editor to set > 8 rows. |
-| `max_pages` | number | `5` | Maximum number of pages to display |
-| `columns` | number | `4` | Number of columns for grid layout |
-| `auto_swipe_interval` | number | `0` | Auto-scroll interval in seconds (0 = disabled) |
-| `show_title` | boolean | `true` | Show media title |
-| `show_year` | boolean | `true` | Show release year |
-| `show_runtime` | boolean | `true` | Show runtime duration |
-| `show_ratings` | boolean | `true` | Show combined rating |
-| `show_media_type_badge` | boolean | `true` | Show Movie/Series badge |
-| `show_watched_status` | boolean | `true` | Show watched checkmarks (Movies) and unplayed counts (Series) |
-| `show_genres` | boolean | `true` | Show genres list |
-| `show_description_on_hover` | boolean | `true` | Show overview when hovering/tapping |
-| `enable_pagination` | boolean | `true` | Enable pagination dots |
-| `show_date_added` | boolean | `false` | Show the date item was added in List view |
-| `show_now_playing` | boolean | `true` | Show currently playing item banner if active |
-| `metadata_position` | string | `below` | Position of text: `below` or `above` image |
-| `rating_source` | string | `auto` | Rating source: `auto`, `imdb`, `tmdb`, or `jellyfin` |
-| `new_badge_days` | number | `3` | Items added within X days show "New" badge |
-| `theme` | string | `auto` | Theme: `auto`, `dark`, or `light` |
-| `click_action` | string | `jellyfin` | Action on click: `jellyfin`, `more-info`, `cast`, `trailer`, or `none` |
-| `hold_action` | string | `cast` | Action on hold: `jellyfin`, `cast`, `more-info`, `trailer`, or `none` |
-| `double_tap_action` | string | `none` | Action on double tap: `jellyfin`, `cast`, `more-info`, `trailer`, or `none` |
-| `default_cast_device` | string | `''` | Default media_player entity for casting |
-| `filter_favorites` | boolean | `false` | Filter Favorites (Show only favorite items) |
-| `status_filter` | string | `all` | Filter Watch Status: `all`, `unwatched`, `watched` |
-| `filter_newly_added` | boolean | `false` | Filter New Items (Show only new items) |
-| `sort_option` | string | `date_added_desc` | Sort order options |
-
-## Now Playing Card Configuration
-
-The **Now Playing Card** shows a rich media control interface for the currently playing item.
-
-```yaml
-type: custom:jellyha-now-playing-card
-entity: sensor.jellyha_now_playing_username
-title: Now Playing
-show_background: true
-```
-
-### Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `entity` | string | **Required** | The user-specific Now Playing sensor (e.g. `sensor.jellyha_now_playing_marko`) |
-| `title` | string | `Jellyfin` | Optional title header |
-| `show_background` | boolean | `true` | Show blurred backdrop fanart as background |
-| `show_title` | boolean | `true` | Show media title text |
-| `show_client` | boolean | `true` | Show client device name (e.g. "Chrome") |
-| `show_media_type_badge` | boolean | `true` | Show badge (MOVIE, SERIES, EPISODE) |
-| `show_genres` | boolean | `true` | Show genres list |
-| `show_ratings` | boolean | `true` | Show community rating |
-| `show_runtime` | boolean | `true` | Show runtime duration |
-| `show_year` | boolean | `true` | Show release year |
 
 ## Services
 
@@ -262,11 +272,11 @@ JellyHA integrates directly with the Home Assistant Media Browser. You can explo
 3. Browse your Movies, Series, and Music collections.
 
 
-## Advanced Automations
+## Examples
 
 The `jellyha.search` service enables powerful automations by allowing you to find content dynamically.
 
-### Example: Play Random Unwatched Movie from 2025
+### Automation Example: Play Random Unwatched Movie from 2025
 
 This automation finds a highly-rated movie you haven't watched yet and casts it.
 
@@ -310,6 +320,76 @@ action:
         data:
           message: "No unwatched 2025 movies with rating > 7 found."
 ```
+
+### Card Example: Display JellyHA Sensors in a Dashboard Card
+
+```yaml
+type: vertical-stack
+cards:
+  - type: markdown
+    content: >
+      # 🪼 JellyHA Sensors
+
+      **Version:** {{ states('sensor.jellyha_version') }} | **Status:** {{
+      states('sensor.jellyha_websocket') }}
+  - type: entities
+    title: Library Content
+    state_color: true
+    entities:
+      - entity: sensor.jellyha_library
+        name: Total Items
+        icon: mdi:video-vintage
+        secondary_info: last-changed
+      - type: divider
+      - entity: sensor.jellyha_unwatched_movies
+        name: Unwatched Movies
+        icon: mdi:movie-open
+      - entity: sensor.jellyha_watched_movies
+        name: Watched Movies
+        icon: mdi:movie-check
+      - type: divider
+      - entity: sensor.jellyha_unwatched_series
+        name: Unwatched Series
+        icon: mdi:video-outline
+      - entity: sensor.jellyha_watched_series
+        name: Watched Series
+        icon: mdi:video-check-outline
+      - entity: sensor.jellyha_unwatched_episodes
+        name: Unwatched Episodes
+        icon: mdi:video
+      - entity: sensor.jellyha_watched_episodes
+        name: Watched Episodes
+        icon: mdi:video-check
+  - type: horizontal-stack
+    cards:
+      - type: gauge
+        entity: sensor.jellyha_active_sessions
+        name: Active Sessions
+        min: 0
+        max: 10
+        severity:
+          green: 0
+          yellow: 3
+          red: 7
+      - type: tile
+        entity: sensor.jellyha_favorites
+        name: Favorites
+        icon: mdi:heart
+  - type: entities
+    title: Activity & System
+    entities:
+      - entity: sensor.jellyha_now_playing_admin
+        name: Admin
+        icon: mdi:account
+      - type: divider
+      - entity: sensor.jellyha_last_data_change
+        name: Last Library Update
+      - entity: sensor.jellyha_last_refresh
+        name: Last Refresh
+      - entity: sensor.jellyha_refresh_duration
+        name: Refresh Duration
+```
+
 
 ## Troubleshooting
 

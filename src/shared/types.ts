@@ -100,6 +100,7 @@ export interface JellyHALibraryCardConfig extends LovelaceCardConfig {
     filter_favorites?: boolean;
     status_filter?: 'all' | 'watched' | 'unwatched';
     filter_newly_added?: boolean;
+    show_search?: boolean;
     sort_option?: 'date_added_asc' | 'date_added_desc' | 'title_asc' | 'title_desc' | 'year_asc' | 'year_desc' | 'last_played_asc' | 'last_played_desc';
 }
 
