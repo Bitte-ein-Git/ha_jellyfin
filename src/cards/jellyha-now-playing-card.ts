@@ -430,13 +430,13 @@ export class JellyHANowPlayingCard extends LitElement {
         :host {
             display: block;
             height: 100%;
-            overflow: hidden;
+            width: 100%;
+            background: none !important;
+            position: relative;
+            z-index: 2; /* Now playing should be slightly above library to avoid its shadow bleed */
         }
         ha-card {
             height: 100%;
-            overflow: hidden;
-        }
-        .jellyha-now-playing {
             overflow: hidden;
             position: relative;
             background: var(--ha-card-background, var(--card-background-color, #fff));
@@ -446,12 +446,17 @@ export class JellyHANowPlayingCard extends LitElement {
             transition: all 0.3s ease-out;
             container-type: size;
             container-name: now-playing;
-            height: 100%;
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
             min-height: 0;
             padding: 0;
+            width: 100%;
+            margin: 0;
+        }
+
+        .jellyha-now-playing {
+            /* Inherits from ha-card, additional unique classes can go here if needed */
         }
         .jellyha-now-playing.has-background {
             background: transparent;

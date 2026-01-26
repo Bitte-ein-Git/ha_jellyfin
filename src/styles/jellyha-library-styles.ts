@@ -5,6 +5,10 @@ export const cardStyles = css`
   :host {
     display: block;
     height: 100%;
+    width: 100%;
+    background: none !important;
+    position: relative;
+    z-index: 1;
     --jf-card-bg: var(--ha-card-background, var(--card-background-color, #1c1c1c));
     --jf-primary: var(--primary-color, #18BCF2);
     --jf-text: var(--primary-text-color, #fff);
@@ -23,18 +27,26 @@ export const cardStyles = css`
     background: var(--jf-card-bg);
     border-radius: var(--ha-card-border-radius, 12px);
     position: relative;
-    z-index: 0;
+    z-index: 1; /* Lift slightly to ensure shadow is consistent */
     box-shadow: var(--ha-card-box-shadow, none);
     border: var(--ha-card-border, 1px solid var(--ha-card-border-color, var(--divider-color, #e0e0e0)));
-    overflow-y: auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     height: 100%;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
   }
 
   .card-inner {
-    border-radius: 12px;
+    border-radius: inherit; /* Inherit from ha-card to match theme */
     overflow: hidden;
     position: relative;
-    z-index: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
 
   .card-header {
@@ -77,9 +89,9 @@ export const cardStyles = css`
   .search-input,
   .search-select {
     width: 100%;
-    /* Use HA input variables */
-    background: var(--input-fill-color, rgba(255, 255, 255, 0.05));
-    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+    /* Use theme-aware transparent background */
+    background: color-mix(in srgb, var(--jf-text), transparent 93%);
+    border: 1px solid color-mix(in srgb, var(--jf-text), transparent 85%);
     border-radius: 20px; /* More round edges */
     padding: 8px 32px 8px 36px;
     color: var(--primary-text-color);
@@ -99,9 +111,14 @@ export const cardStyles = css`
     cursor: pointer;
   }
 
+  .search-select option {
+    background: var(--jf-card-bg);
+    color: var(--jf-text);
+  }
+
   .search-input:focus,
   .search-select:focus {
-    background: var(--input-fill-color-focus, rgba(255, 255, 255, 0.1));
+    background: color-mix(in srgb, var(--jf-text), transparent 90%);
     border-color: var(--primary-color);
     box-shadow: 0 0 0 1px var(--primary-color); /* Highlight focus */
   }
@@ -237,21 +254,23 @@ export const cardStyles = css`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--jf-divider);
+    background: var(--jf-text);
+    opacity: 0.25;
     border: none;
     cursor: pointer;
     padding: 0;
-    transition: background var(--jf-transition), transform var(--jf-transition);
+    transition: background var(--jf-transition), transform var(--jf-transition), opacity var(--jf-transition);
     pointer-events: auto;
     z-index: 100;
   }
 
   .pagination-dot:hover {
-    background: var(--jf-text-secondary);
+    opacity: 0.5;
   }
 
   .pagination-dot.active {
     background: var(--jf-primary);
+    opacity: 1;
     transform: scale(1.2);
   }
 
@@ -271,13 +290,15 @@ export const cardStyles = css`
     width: 8px;
     height: 8px;
     border-radius: 4px;
-    background: var(--jf-divider);
-    transition: width 0.15s ease-out, background 0.15s ease-out, border-radius 0.15s ease-out;
+    background: var(--jf-text);
+    opacity: 0.25;
+    transition: width 0.15s ease-out, background 0.15s ease-out, border-radius 0.15s ease-out, opacity 0.15s ease-out;
   }
 
   /* Active dot */
   .scroll-dot.active {
     background: var(--jf-primary);
+    opacity: 1;
   }
 
   /* Pill shape at start/end positions */
@@ -1205,7 +1226,8 @@ export const cardStyles = css`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--jf-divider);
+    background: var(--jf-text);
+    opacity: 0.25;
     border: none;
     cursor: pointer;
     padding: 0;
@@ -1215,11 +1237,12 @@ export const cardStyles = css`
   }
 
   .smart-dot:hover {
-    background: var(--jf-text-secondary);
+    opacity: 0.5;
   }
 
   .smart-dot.active {
     background: var(--jf-primary);
+    opacity: 1;
     transform: scale(1.2);
   }
 

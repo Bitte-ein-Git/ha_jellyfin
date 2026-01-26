@@ -45,7 +45,7 @@ const je = (t) => new xe(typeof t == "string" ? t : t + "", void 0, ae), F = (t,
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const { is: Ee, defineProperty: ze, getOwnPropertyDescriptor: Me, getOwnPropertyNames: De, getOwnPropertySymbols: Ie, getPrototypeOf: Oe } = Object, Z = globalThis, pe = Z.trustedTypes, Ne = pe ? pe.emptyScript : "", He = Z.reactiveElementPolyfillSupport, O = (t, e) => t, q = { toAttribute(t, e) {
+const { is: Ee, defineProperty: ze, getOwnPropertyDescriptor: Me, getOwnPropertyNames: De, getOwnPropertySymbols: Ie, getPrototypeOf: Oe } = Object, Z = globalThis, pe = Z.trustedTypes, Ne = pe ? pe.emptyScript : "", Re = Z.reactiveElementPolyfillSupport, O = (t, e) => t, q = { toAttribute(t, e) {
   switch (e) {
     case Boolean:
       t = t ? Ne : null;
@@ -256,13 +256,13 @@ let E = class extends HTMLElement {
   firstUpdated(e) {
   }
 };
-E.elementStyles = [], E.shadowRootOptions = { mode: "open" }, E[O("elementProperties")] = /* @__PURE__ */ new Map(), E[O("finalized")] = /* @__PURE__ */ new Map(), He?.({ ReactiveElement: E }), (Z.reactiveElementVersions ??= []).push("2.1.2");
+E.elementStyles = [], E.shadowRootOptions = { mode: "open" }, E[O("elementProperties")] = /* @__PURE__ */ new Map(), E[O("finalized")] = /* @__PURE__ */ new Map(), Re?.({ ReactiveElement: E }), (Z.reactiveElementVersions ??= []).push("2.1.2");
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const se = globalThis, ge = (t) => t, V = se.trustedTypes, ue = V ? V.createPolicy("lit-html", { createHTML: (t) => t }) : void 0, $e = "$lit$", S = `lit$${Math.random().toFixed(9).slice(2)}$`, ke = "?" + S, Re = `<${ke}>`, A = document, N = () => A.createComment(""), H = (t) => t === null || typeof t != "object" && typeof t != "function", re = Array.isArray, Le = (t) => re(t) || typeof t?.[Symbol.iterator] == "function", Q = `[ 	
+const se = globalThis, ge = (t) => t, V = se.trustedTypes, ue = V ? V.createPolicy("lit-html", { createHTML: (t) => t }) : void 0, $e = "$lit$", S = `lit$${Math.random().toFixed(9).slice(2)}$`, ke = "?" + S, He = `<${ke}>`, A = document, N = () => A.createComment(""), R = (t) => t === null || typeof t != "object" && typeof t != "function", re = Array.isArray, Le = (t) => re(t) || typeof t?.[Symbol.iterator] == "function", Q = `[ 	
 \f\r]`, I = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, me = /-->/g, fe = />/g, C = RegExp(`>|${Q}(?:([^\\s"'>=/]+)(${Q}*=${Q}*(?:[^ 	
 \f\r"'\`<>=]|("|')|))|$)`, "g"), we = /'/g, ye = /"/g, Se = /^(?:script|style|textarea|title)$/i, Ue = (t) => (e, ...i) => ({ _$litType$: t, strings: e, values: i }), n = Ue(1), z = Symbol.for("lit-noChange"), d = Symbol.for("lit-nothing"), ve = /* @__PURE__ */ new WeakMap(), P = A.createTreeWalker(A, 129);
 function Ce(t, e) {
@@ -277,17 +277,17 @@ const Fe = (t, e) => {
     let _, g, p = -1, m = 0;
     for (; m < c.length && (r.lastIndex = m, g = r.exec(c), g !== null); ) m = r.lastIndex, r === I ? g[1] === "!--" ? r = me : g[1] !== void 0 ? r = fe : g[2] !== void 0 ? (Se.test(g[2]) && (o = RegExp("</" + g[2], "g")), r = C) : g[3] !== void 0 && (r = C) : r === C ? g[0] === ">" ? (r = o ?? I, p = -1) : g[1] === void 0 ? p = -2 : (p = r.lastIndex - g[2].length, _ = g[1], r = g[3] === void 0 ? C : g[3] === '"' ? ye : we) : r === ye || r === we ? r = C : r === me || r === fe ? r = I : (r = C, o = void 0);
     const y = r === C && t[h + 1].startsWith("/>") ? " " : "";
-    s += r === I ? c + Re : p >= 0 ? (a.push(_), c.slice(0, p) + $e + c.slice(p) + S + y) : c + S + (p === -2 ? h : y);
+    s += r === I ? c + He : p >= 0 ? (a.push(_), c.slice(0, p) + $e + c.slice(p) + S + y) : c + S + (p === -2 ? h : y);
   }
   return [Ce(t, s + (t[i] || "<?>") + (e === 2 ? "</svg>" : e === 3 ? "</math>" : "")), a];
 };
-class R {
+class H {
   constructor({ strings: e, _$litType$: i }, a) {
     let o;
     this.parts = [];
     let s = 0, r = 0;
     const h = e.length - 1, c = this.parts, [_, g] = Fe(e, i);
-    if (this.el = R.createElement(_, a), P.currentNode = this.el.content, i === 2 || i === 3) {
+    if (this.el = H.createElement(_, a), P.currentNode = this.el.content, i === 2 || i === 3) {
       const p = this.el.content.firstChild;
       p.replaceWith(...p.childNodes);
     }
@@ -321,7 +321,7 @@ class R {
 function M(t, e, i = t, a) {
   if (e === z) return e;
   let o = a !== void 0 ? i._$Co?.[a] : i._$Cl;
-  const s = H(e) ? void 0 : e._$litDirective$;
+  const s = R(e) ? void 0 : e._$litDirective$;
   return o?.constructor !== s && (o?._$AO?.(!1), s === void 0 ? o = void 0 : (o = new s(t), o._$AT(t, i, a)), a !== void 0 ? (i._$Co ??= [])[a] = o : i._$Cl = o), o !== void 0 && (e = M(t, o._$AS(t, e.values), o, a)), e;
 }
 class Be {
@@ -371,7 +371,7 @@ class B {
     return this._$AB;
   }
   _$AI(e, i = this) {
-    e = M(this, e, i), H(e) ? e === d || e == null || e === "" ? (this._$AH !== d && this._$AR(), this._$AH = d) : e !== this._$AH && e !== z && this._(e) : e._$litType$ !== void 0 ? this.$(e) : e.nodeType !== void 0 ? this.T(e) : Le(e) ? this.k(e) : this._(e);
+    e = M(this, e, i), R(e) ? e === d || e == null || e === "" ? (this._$AH !== d && this._$AR(), this._$AH = d) : e !== this._$AH && e !== z && this._(e) : e._$litType$ !== void 0 ? this.$(e) : e.nodeType !== void 0 ? this.T(e) : Le(e) ? this.k(e) : this._(e);
   }
   O(e) {
     return this._$AA.parentNode.insertBefore(e, this._$AB);
@@ -380,10 +380,10 @@ class B {
     this._$AH !== e && (this._$AR(), this._$AH = this.O(e));
   }
   _(e) {
-    this._$AH !== d && H(this._$AH) ? this._$AA.nextSibling.data = e : this.T(A.createTextNode(e)), this._$AH = e;
+    this._$AH !== d && R(this._$AH) ? this._$AA.nextSibling.data = e : this.T(A.createTextNode(e)), this._$AH = e;
   }
   $(e) {
-    const { values: i, _$litType$: a } = e, o = typeof a == "number" ? this._$AC(e) : (a.el === void 0 && (a.el = R.createElement(Ce(a.h, a.h[0]), this.options)), a);
+    const { values: i, _$litType$: a } = e, o = typeof a == "number" ? this._$AC(e) : (a.el === void 0 && (a.el = H.createElement(Ce(a.h, a.h[0]), this.options)), a);
     if (this._$AH?._$AD === o) this._$AH.p(i);
     else {
       const s = new Be(o, this), r = s.u(this.options);
@@ -392,7 +392,7 @@ class B {
   }
   _$AC(e) {
     let i = ve.get(e.strings);
-    return i === void 0 && ve.set(e.strings, i = new R(e)), i;
+    return i === void 0 && ve.set(e.strings, i = new H(e)), i;
   }
   k(e) {
     re(this._$AH) || (this._$AH = [], this._$AR());
@@ -424,11 +424,11 @@ class K {
   _$AI(e, i = this, a, o) {
     const s = this.strings;
     let r = !1;
-    if (s === void 0) e = M(this, e, i, 0), r = !H(e) || e !== this._$AH && e !== z, r && (this._$AH = e);
+    if (s === void 0) e = M(this, e, i, 0), r = !R(e) || e !== this._$AH && e !== z, r && (this._$AH = e);
     else {
       const h = e;
       let c, _;
-      for (e = s[0], c = 0; c < s.length - 1; c++) _ = M(this, h[a + c], i, c), _ === z && (_ = this._$AH[c]), r ||= !H(_) || _ !== this._$AH[c], _ === d ? e = d : e !== d && (e += (_ ?? "") + s[c + 1]), this._$AH[c] = _;
+      for (e = s[0], c = 0; c < s.length - 1; c++) _ = M(this, h[a + c], i, c), _ === z && (_ = this._$AH[c]), r ||= !R(_) || _ !== this._$AH[c], _ === d ? e = d : e !== d && (e += (_ ?? "") + s[c + 1]), this._$AH[c] = _;
     }
     r && !o && this.j(e);
   }
@@ -477,7 +477,7 @@ class Je {
   }
 }
 const Ye = se.litHtmlPolyfillSupport;
-Ye?.(R, B), (se.litHtmlVersions ??= []).push("3.3.2");
+Ye?.(H, B), (se.litHtmlVersions ??= []).push("3.3.2");
 const Pe = (t, e, i) => {
   const a = i?.renderBefore ?? e;
   let o = a._$litPart$;
@@ -616,6 +616,10 @@ const Ae = F`
   :host {
     display: block;
     height: 100%;
+    width: 100%;
+    background: none !important;
+    position: relative;
+    z-index: 1;
     --jf-card-bg: var(--ha-card-background, var(--card-background-color, #1c1c1c));
     --jf-primary: var(--primary-color, #18BCF2);
     --jf-text: var(--primary-text-color, #fff);
@@ -634,18 +638,26 @@ const Ae = F`
     background: var(--jf-card-bg);
     border-radius: var(--ha-card-border-radius, 12px);
     position: relative;
-    z-index: 0;
+    z-index: 1; /* Lift slightly to ensure shadow is consistent */
     box-shadow: var(--ha-card-box-shadow, none);
     border: var(--ha-card-border, 1px solid var(--ha-card-border-color, var(--divider-color, #e0e0e0)));
-    overflow-y: auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     height: 100%;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
   }
 
   .card-inner {
-    border-radius: 12px;
+    border-radius: inherit; /* Inherit from ha-card to match theme */
     overflow: hidden;
     position: relative;
-    z-index: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
 
   .card-header {
@@ -688,9 +700,9 @@ const Ae = F`
   .search-input,
   .search-select {
     width: 100%;
-    /* Use HA input variables */
-    background: var(--input-fill-color, rgba(255, 255, 255, 0.05));
-    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+    /* Use theme-aware transparent background */
+    background: color-mix(in srgb, var(--jf-text), transparent 93%);
+    border: 1px solid color-mix(in srgb, var(--jf-text), transparent 85%);
     border-radius: 20px; /* More round edges */
     padding: 8px 32px 8px 36px;
     color: var(--primary-text-color);
@@ -710,9 +722,14 @@ const Ae = F`
     cursor: pointer;
   }
 
+  .search-select option {
+    background: var(--jf-card-bg);
+    color: var(--jf-text);
+  }
+
   .search-input:focus,
   .search-select:focus {
-    background: var(--input-fill-color-focus, rgba(255, 255, 255, 0.1));
+    background: color-mix(in srgb, var(--jf-text), transparent 90%);
     border-color: var(--primary-color);
     box-shadow: 0 0 0 1px var(--primary-color); /* Highlight focus */
   }
@@ -848,21 +865,23 @@ const Ae = F`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--jf-divider);
+    background: var(--jf-text);
+    opacity: 0.25;
     border: none;
     cursor: pointer;
     padding: 0;
-    transition: background var(--jf-transition), transform var(--jf-transition);
+    transition: background var(--jf-transition), transform var(--jf-transition), opacity var(--jf-transition);
     pointer-events: auto;
     z-index: 100;
   }
 
   .pagination-dot:hover {
-    background: var(--jf-text-secondary);
+    opacity: 0.5;
   }
 
   .pagination-dot.active {
     background: var(--jf-primary);
+    opacity: 1;
     transform: scale(1.2);
   }
 
@@ -882,13 +901,15 @@ const Ae = F`
     width: 8px;
     height: 8px;
     border-radius: 4px;
-    background: var(--jf-divider);
-    transition: width 0.15s ease-out, background 0.15s ease-out, border-radius 0.15s ease-out;
+    background: var(--jf-text);
+    opacity: 0.25;
+    transition: width 0.15s ease-out, background 0.15s ease-out, border-radius 0.15s ease-out, opacity 0.15s ease-out;
   }
 
   /* Active dot */
   .scroll-dot.active {
     background: var(--jf-primary);
+    opacity: 1;
   }
 
   /* Pill shape at start/end positions */
@@ -1816,7 +1837,8 @@ const Ae = F`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--jf-divider);
+    background: var(--jf-text);
+    opacity: 0.25;
     border: none;
     cursor: pointer;
     padding: 0;
@@ -1826,11 +1848,12 @@ const Ae = F`
   }
 
   .smart-dot:hover {
-    background: var(--jf-text-secondary);
+    opacity: 0.5;
   }
 
   .smart-dot.active {
     background: var(--jf-primary);
+    opacity: 1;
     transform: scale(1.2);
   }
 
@@ -5213,13 +5236,13 @@ j.styles = F`
         :host {
             display: block;
             height: 100%;
-            overflow: hidden;
+            width: 100%;
+            background: none !important;
+            position: relative;
+            z-index: 2; /* Now playing should be slightly above library to avoid its shadow bleed */
         }
         ha-card {
             height: 100%;
-            overflow: hidden;
-        }
-        .jellyha-now-playing {
             overflow: hidden;
             position: relative;
             background: var(--ha-card-background, var(--card-background-color, #fff));
@@ -5229,12 +5252,17 @@ j.styles = F`
             transition: all 0.3s ease-out;
             container-type: size;
             container-name: now-playing;
-            height: 100%;
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
             min-height: 0;
             padding: 0;
+            width: 100%;
+            margin: 0;
+        }
+
+        .jellyha-now-playing {
+            /* Inherits from ha-card, additional unique classes can go here if needed */
         }
         .jellyha-now-playing.has-background {
             background: transparent;
