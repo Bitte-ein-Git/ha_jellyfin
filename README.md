@@ -5,10 +5,6 @@
 
 Jellyfin for Home Assistant Custom Integration.
 
-**JellyHA Library** provides a beautiful way to browse and play your media collection directly in Home Assistant.
-
-**JellyHA Now Playing** displays currently playing media with some playback controls.
-
 <div align="center">
   <img src="./docs/JellyHA-Library-Grid.png" width="45%" alt="Grid View" />
   <img src="./docs/JellyHA-Library-Carousel.png" width="45%" alt="Carousel View" />
@@ -116,7 +112,7 @@ To get your Jellyfin API key:
 
 ## Library Card Configuration
 
-Add the **Library Card** to your dashboard:
+The **JellyHA Library** provides a beautiful way to browse and play your media collection directly in Home Assistant.
 
 ```yaml
 type: custom:jellyha-library-card
@@ -168,11 +164,11 @@ max_pages: 5
 
 ## Now Playing Card Configuration
 
-The **Now Playing Card** shows a rich media control interface for the currently playing item.
+The **JellyHA Now Playing Card** shows a rich media control interface for the currently playing item.
 
 ```yaml
 type: custom:jellyha-now-playing-card
-entity: sensor.jellyha_now_playing_username
+entity: sensor.jellyha_now_playing_[username]
 title: Now Playing
 show_background: true
 ```
