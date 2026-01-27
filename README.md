@@ -10,10 +10,11 @@ Jellyfin for Home Assistant Custom Integration.
 **JellyHA Now Playing** provides a beautiful way show and interact with currently playing media in Home Assistant.
 
 <div align="center">
-  <img src="./docs/JellyHA-Library-Carousel.png" width="45%" alt="Carousel View" />
   <img src="./docs/JellyHA-Library-Grid.png" width="45%" alt="Grid View" />
+  <img src="./docs/JellyHA-Library-Carousel.png" width="45%" alt="Carousel View" />
   <img src="./docs/JellyHA-Library-List.png" width="45%" alt="List View" />
   <img src="./docs/JellyHA-Library-Next-Up.png" width="45%" alt="Next Up View" />
+  <img src="./docs/JellyHA-Library-More-Information.png" width="45%" alt="More Information" />
 </div>
 
 ## Features
@@ -382,7 +383,7 @@ cards:
         name: Admin
         icon: mdi:account
       - type: divider
-      - entity: sensor.jellyha_last_data_change
+      - entity: sensor.jellyha_last_library_update
         name: Last Library Update
       - entity: sensor.jellyha_last_refresh
         name: Last Refresh

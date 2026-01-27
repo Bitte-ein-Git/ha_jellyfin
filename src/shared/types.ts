@@ -10,7 +10,7 @@ export interface HomeAssistant {
         darkMode: boolean;
         selectedTheme?: string;
     };
-    callService: (domain: string, service: string, data?: Record<string, unknown>) => Promise<void>;
+    callService: (domain: string, service: string, data?: Record<string, unknown>, target?: Record<string, unknown>) => Promise<any>;
     callWS: <T>(msg: Record<string, unknown>) => Promise<T>;
     locale?: {
         language: string;
@@ -63,6 +63,7 @@ export interface MediaItem {
     trailer_url?: string;
     last_played_date?: string;
     series_name?: string;
+    config_entry_id?: string;
 }
 
 export interface JellyHALibraryCardConfig extends LovelaceCardConfig {

@@ -45,10 +45,10 @@ const je = (t) => new xe(typeof t == "string" ? t : t + "", void 0, ae), F = (t,
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const { is: Ee, defineProperty: Me, getOwnPropertyDescriptor: ze, getOwnPropertyNames: De, getOwnPropertySymbols: Ie, getPrototypeOf: Oe } = Object, Z = globalThis, pe = Z.trustedTypes, Ne = pe ? pe.emptyScript : "", Le = Z.reactiveElementPolyfillSupport, O = (t, e) => t, q = { toAttribute(t, e) {
+const { is: Ee, defineProperty: Me, getOwnPropertyDescriptor: ze, getOwnPropertyNames: De, getOwnPropertySymbols: Ie, getPrototypeOf: Ne } = Object, Z = globalThis, pe = Z.trustedTypes, Oe = pe ? pe.emptyScript : "", Le = Z.reactiveElementPolyfillSupport, N = (t, e) => t, q = { toAttribute(t, e) {
   switch (e) {
     case Boolean:
-      t = t ? Ne : null;
+      t = t ? Oe : null;
       break;
     case Object:
     case Array:
@@ -103,13 +103,13 @@ let E = class extends HTMLElement {
     return this.elementProperties.get(e) ?? _e;
   }
   static _$Ei() {
-    if (this.hasOwnProperty(O("elementProperties"))) return;
-    const e = Oe(this);
+    if (this.hasOwnProperty(N("elementProperties"))) return;
+    const e = Ne(this);
     e.finalize(), e.l !== void 0 && (this.l = [...e.l]), this.elementProperties = new Map(e.elementProperties);
   }
   static finalize() {
-    if (this.hasOwnProperty(O("finalized"))) return;
-    if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(O("properties"))) {
+    if (this.hasOwnProperty(N("finalized"))) return;
+    if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(N("properties"))) {
       const i = this.properties, a = [...De(i), ...Ie(i)];
       for (const o of a) this.createProperty(o, i[o]);
     }
@@ -256,13 +256,13 @@ let E = class extends HTMLElement {
   firstUpdated(e) {
   }
 };
-E.elementStyles = [], E.shadowRootOptions = { mode: "open" }, E[O("elementProperties")] = /* @__PURE__ */ new Map(), E[O("finalized")] = /* @__PURE__ */ new Map(), Le?.({ ReactiveElement: E }), (Z.reactiveElementVersions ??= []).push("2.1.2");
+E.elementStyles = [], E.shadowRootOptions = { mode: "open" }, E[N("elementProperties")] = /* @__PURE__ */ new Map(), E[N("finalized")] = /* @__PURE__ */ new Map(), Le?.({ ReactiveElement: E }), (Z.reactiveElementVersions ??= []).push("2.1.2");
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const se = globalThis, ge = (t) => t, V = se.trustedTypes, ue = V ? V.createPolicy("lit-html", { createHTML: (t) => t }) : void 0, $e = "$lit$", C = `lit$${Math.random().toFixed(9).slice(2)}$`, ke = "?" + C, He = `<${ke}>`, j = document, N = () => j.createComment(""), L = (t) => t === null || typeof t != "object" && typeof t != "function", re = Array.isArray, Re = (t) => re(t) || typeof t?.[Symbol.iterator] == "function", Q = `[ 	
+const se = globalThis, ge = (t) => t, V = se.trustedTypes, ue = V ? V.createPolicy("lit-html", { createHTML: (t) => t }) : void 0, $e = "$lit$", C = `lit$${Math.random().toFixed(9).slice(2)}$`, ke = "?" + C, He = `<${ke}>`, j = document, O = () => j.createComment(""), L = (t) => t === null || typeof t != "object" && typeof t != "function", re = Array.isArray, Re = (t) => re(t) || typeof t?.[Symbol.iterator] == "function", Q = `[ 	
 \f\r]`, I = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, me = /-->/g, fe = />/g, P = RegExp(`>|${Q}(?:([^\\s"'>=/]+)(${Q}*=${Q}*(?:[^ 	
 \f\r"'\`<>=]|("|')|))|$)`, "g"), we = /'/g, ye = /"/g, Se = /^(?:script|style|textarea|title)$/i, Ue = (t) => (e, ...i) => ({ _$litType$: t, strings: e, values: i }), n = Ue(1), M = Symbol.for("lit-noChange"), d = Symbol.for("lit-nothing"), ve = /* @__PURE__ */ new WeakMap(), A = j.createTreeWalker(j, 129);
 function Ce(t, e) {
@@ -301,8 +301,8 @@ class H {
           const p = o.textContent.split(C), m = p.length - 1;
           if (m > 0) {
             o.textContent = V ? V.emptyScript : "";
-            for (let y = 0; y < m; y++) o.append(p[y], N()), A.nextNode(), c.push({ type: 2, index: ++s });
-            o.append(p[m], N());
+            for (let y = 0; y < m; y++) o.append(p[y], O()), A.nextNode(), c.push({ type: 2, index: ++s });
+            o.append(p[m], O());
           }
         }
       } else if (o.nodeType === 8) if (o.data === ke) c.push({ type: 2, index: s });
@@ -398,7 +398,7 @@ class B {
     re(this._$AH) || (this._$AH = [], this._$AR());
     const i = this._$AH;
     let a, o = 0;
-    for (const s of e) o === i.length ? i.push(a = new B(this.O(N()), this.O(N()), this, this.options)) : a = i[o], a._$AI(s), o++;
+    for (const s of e) o === i.length ? i.push(a = new B(this.O(O()), this.O(O()), this, this.options)) : a = i[o], a._$AI(s), o++;
     o < i.length && (this._$AR(a && a._$AB.nextSibling, o), i.length = o);
   }
   _$AR(e = this._$AA.nextSibling, i) {
@@ -483,7 +483,7 @@ const Pe = (t, e, i) => {
   let o = a._$litPart$;
   if (o === void 0) {
     const s = i?.renderBefore ?? null;
-    a._$litPart$ = o = new B(e.insertBefore(N(), s), s, void 0, i ?? {});
+    a._$litPart$ = o = new B(e.insertBefore(O(), s), s, void 0, i ?? {});
   }
   return o._$AI(t), o;
 };
@@ -2490,7 +2490,7 @@ let x = class extends k {
     super(...arguments), this._open = !1, this._confirmDelete = !1, this._touchStartY = 0, this._currentTranslateY = 0, this._isDragging = !1, this._swipeClosingThreshold = 100, this._portalContainer = null, this.closeDialog = () => {
       this._open = !1, this._confirmDelete = !1, this.dispatchEvent(new CustomEvent("closed", { bubbles: !0, composed: !0 })), this.requestUpdate();
     }, this._handlePlay = async () => {
-      if (!this._item || !this._defaultCastDevice) {
+      if (this._haptic(), !this._item || !this._defaultCastDevice) {
         this._defaultCastDevice || alert("No default cast device configured.");
         return;
       }
@@ -2503,7 +2503,7 @@ let x = class extends k {
         console.error("Failed to cast", t);
       }
     }, this._playNextUp = async () => {
-      if (!this._nextUpItem || !this._defaultCastDevice) {
+      if (this._haptic(), !this._nextUpItem || !this._defaultCastDevice) {
         this._defaultCastDevice || alert("No default cast device configured.");
         return;
       }
@@ -2517,6 +2517,7 @@ let x = class extends k {
       }
     }, this._handleFavorite = async () => {
       if (!this._item) return;
+      this._haptic();
       const t = !this._item.is_favorite;
       this._item = { ...this._item, is_favorite: t }, await this.hass.callService("jellyha", "update_favorite", {
         item_id: this._item.id,
@@ -2524,6 +2525,7 @@ let x = class extends k {
       }), this.requestUpdate();
     }, this._handleWatched = async () => {
       if (!this._item) return;
+      this._haptic();
       const t = !this._item.is_played;
       this._item = { ...this._item, is_played: t }, await this.hass.callService("jellyha", "mark_watched", {
         item_id: this._item.id,
@@ -2531,11 +2533,13 @@ let x = class extends k {
       }), this.requestUpdate();
     }, this._handleDeleteConfirm = async () => {
       if (!this._item) return;
+      this._haptic();
       const t = this._item.id;
       this.closeDialog(), await this.hass.callService("jellyha", "delete_item", {
         item_id: t
       });
     }, this._handleWatchTrailer = () => {
+      this._haptic();
       const t = this._item;
       if (!t?.trailer_url) return;
       const e = t.trailer_url;
@@ -2577,7 +2581,24 @@ let x = class extends k {
     super.disconnectedCallback(), this._portalContainer && (this._portalContainer.remove(), this._portalContainer = null);
   }
   async showDialog(t) {
-    this._item = t.item, this.hass = t.hass, this._defaultCastDevice = t.defaultCastDevice, this._open = !0, this._nextUpItem = void 0, this._item.type === "Series" && this._fetchNextUp(this._item), await this.updateComplete;
+    this._item = t.item, this.hass = t.hass, this._defaultCastDevice = t.defaultCastDevice, this._open = !0, this._nextUpItem = void 0, this._item.type === "Series" && this._fetchNextUp(this._item), this._fetchFullDetails(this._item.id), await this.updateComplete;
+  }
+  async _fetchFullDetails(t) {
+    try {
+      const e = await this.hass.callWS({
+        type: "call_service",
+        domain: "jellyha",
+        service: "get_item",
+        service_data: {
+          item_id: t,
+          config_entry_id: this._item?.config_entry_id
+        },
+        return_response: !0
+      }), i = e?.response || e;
+      i && i.item && (this._item = { ...this._item, ...i.item }, this.requestUpdate());
+    } catch (e) {
+      console.warn("Failed to fetch full item details:", JSON.stringify(e, null, 2));
+    }
   }
   async _fetchNextUp(t) {
     const e = Object.keys(this.hass.states).filter(
@@ -2612,6 +2633,12 @@ let x = class extends k {
                 --mdc-dialog-z-index: 9999;
                 --mdc-dialog-min-width: 400px;
                 --mdc-dialog-max-width: 90vw;
+                --mdc-theme-surface: transparent; 
+                --ha-dialog-background: transparent;
+                --mdc-dialog-box-shadow: none;
+                --dialog-content-padding: 0;
+                --mdc-dialog-content-padding: 0;
+                --dialog-surface-margin: 0;
              }
 
             .content {
@@ -2623,11 +2650,31 @@ let x = class extends k {
                 will-change: transform;
                 background: var(--ha-card-background, var(--card-background-color, #1c1c1c));
                 border-radius: 20px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.5); /* Card shadow */
                 padding: 24px;
                 overflow-y: auto;
                 max-height: 80vh;
                 display: block; /* Use block for mobile flow, or flex/grid as needed */
                 overscroll-behavior-y: contain; /* Prevent browser overscroll/refresh */
+                
+                /* Hide scrollbar for cleaner mobile look */
+                scrollbar-width: none; /* Firefox */
+                -ms-overflow-style: none; /* IE/Edge */
+            }
+            
+            /* Aggressive scrollbar hiding for WebKit (Chrome/Safari/Android) */
+            .content::-webkit-scrollbar {
+                display: none; 
+                width: 0px !important;
+                height: 0px !important;
+                background: transparent;
+            }
+            .content::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .content::-webkit-scrollbar-thumb {
+                background: transparent;
+                border: none;
             }
 
             @media (min-width: 601px) {
@@ -2698,17 +2745,25 @@ let x = class extends k {
             .stats-row {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 16px;
-                padding: 12px;
-                border-radius: 8px;
-                font-size: 0.95rem;
-                background: var(--secondary-background-color, rgba(0,0,0,0.2));
+                gap: 8px; /* Tighter gap for chips */
+                padding: 4px 0; /* Minimal vertical padding */
+                /* Remove container background for native look */
+                background: transparent;
+                border-radius: 0;
             }
 
             .stat-item {
                 display: flex;
                 gap: 6px;
                 align-items: center;
+                /* Native Chip Styling */
+                border: 1px solid var(--divider-color);
+                border-radius: 18px;
+                padding: 6px 12px;
+                font-size: 0.9rem;
+                font-weight: 500;
+                color: var(--primary-text-color);
+                background: transparent; 
             }
 
             .description {
@@ -2823,19 +2878,25 @@ let x = class extends k {
 
             /* Next Up Section */
             .next-up-card {
-                background: rgba(0,0,0,0.2);
+                background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
                 border-radius: 12px;
-                padding: 16px;
+                padding: 12px;
                 display: flex;
                 gap: 16px;
                 align-items: center;
                 margin-top: 16px;
                 border: 1px solid var(--divider-color);
                 cursor: pointer;
-                transition: background 0.2s;
+                transition: background 0.2s, transform 0.1s;
+                position: relative;
+                overflow: hidden;
             }
             .next-up-card:hover {
-                background: rgba(0,0,0,0.4);
+                background: rgba(var(--rgb-primary-text-color), 0.05);
+            }
+            .next-up-card:active {
+                background: rgba(var(--rgb-primary-text-color), 0.1);
+                transform: scale(0.98); /* Button press effect */
             }
             .next-up-thumb {
                 width: 120px;
@@ -2886,7 +2947,7 @@ let x = class extends k {
                 hideActions
                 .heading=${""} 
             >
-                <div 
+                <ha-card 
                     class="content"
                     style="${this._isDragging || this._currentTranslateY > 0 ? `transform: translateY(${this._currentTranslateY}px); transition: ${this._isDragging ? "none" : "transform 0.3s ease-out"}` : ""}"
                 >
@@ -2919,11 +2980,13 @@ let x = class extends k {
                                      <ha-icon icon="${t.is_favorite ? "mdi:heart" : "mdi:heart-outline"}"></ha-icon>
                                 </button>
 
-                                <a href="${t.jellyfin_url}" class="action-btn" target="_blank" title="Open in Jellyfin">
+                                <a href="${t.jellyfin_url}" class="action-btn" target="_blank" title="Open in Jellyfin" @click=${() => this._haptic()}>
                                     <ha-icon icon="mdi:popcorn"></ha-icon>
                                 </a>
 
-                                <button class="action-btn" @click=${() => this._confirmDelete = !0} title="Delete Item">
+                                <button class="action-btn" @click=${() => {
+      this._haptic(), this._confirmDelete = !0;
+    }} title="Delete Item">
                                     <ha-icon icon="mdi:trash-can-outline"></ha-icon>
                                 </button>
                             `}
@@ -2948,7 +3011,7 @@ let x = class extends k {
                                     <h3 class="next-up-title">${this._nextUpItem.name}</h3>
                                     <span class="next-up-meta">S${this._nextUpItem.season} : E${this._nextUpItem.episode} • ${this._formatRuntime(this._nextUpItem.runtime_minutes)}</span>
                                 </div>
-                                <ha-icon icon="mdi:play-circle-outline" style="font-size: 32px; opacity: 0.8;"></ha-icon>
+                                <ha-icon icon="mdi:play-circle" style="font-size: 36px; color: var(--primary-color); opacity: 1;"></ha-icon>
                             </div>
                         ` : d}
 
@@ -2981,10 +3044,10 @@ let x = class extends k {
                          <div class="divider"></div>
 
                          <div class="media-info-grid">
-                            ${this._renderMediaDetails(t)}
+                            ${this._renderMediaDetails(e && this._nextUpItem ? this._nextUpItem : t)}
                          </div>
                     </div>
-                </div>
+                </ha-card>
             </ha-dialog>
         `;
   }
@@ -2994,17 +3057,27 @@ let x = class extends k {
     return e > 0 ? `${e}h ${i}m` : `${i} min`;
   }
   _renderMediaDetails(t) {
-    const e = [];
-    return (t.media_streams || []).forEach((a) => {
-      a.Type === "Video" ? (e.push(n`<div class="info-pair"><b>Video</b><span>${a.Codec?.toUpperCase()}</span></div>`), e.push(n`<div class="info-pair"><b>Resolution</b><span>${a.Width}x${a.Height}</span></div>`)) : a.Type === "Audio" && a.Index === 1 && (e.push(n`<div class="info-pair"><b>Audio</b><span>${a.Codec?.toUpperCase()}</span></div>`), e.push(n`<div class="info-pair"><b>Channels</b><span>${a.Channels} ch</span></div>`));
-    }), e;
+    const e = [], i = t.media_streams || [], a = i.find((s) => s.Type?.toLowerCase() === "video");
+    a && (a.Codec && e.push(n`<div class="info-pair"><b>Video</b><span>${a.Codec.toUpperCase()}</span></div>`), a.Width && a.Height && e.push(n`<div class="info-pair"><b>Resolution</b><span>${a.Width}x${a.Height}</span></div>`));
+    const o = i.find((s) => s.Type?.toLowerCase() === "audio" && !!s.IsDefault) || i.find((s) => s.Type?.toLowerCase() === "audio");
+    return o && (o.Codec && e.push(n`<div class="info-pair"><b>Audio</b><span>${o.Codec.toUpperCase()}</span></div>`), o.Channels && e.push(n`<div class="info-pair"><b>Channels</b><span>${o.Channels} ch</span></div>`)), e;
+  }
+  _haptic(t = "selection") {
+    const e = new CustomEvent("haptic", {
+      detail: t,
+      bubbles: !0,
+      composed: !0
+    });
+    this.dispatchEvent(e);
   }
   /* Swipe to Close Logic */
   _getScrollParent(t) {
     if (!t) return null;
     let e = t;
     for (; e && e !== this._portalContainer && e !== document.body; ) {
-      const i = window.getComputedStyle(e).overflowY;
+      if (e.classList?.contains("content"))
+        return e.scrollHeight > e.clientHeight ? e : null;
+      const { overflowY: i } = window.getComputedStyle(e);
       if ((i === "auto" || i === "scroll") && e.scrollHeight > e.clientHeight)
         return e;
       e = e.parentElement;

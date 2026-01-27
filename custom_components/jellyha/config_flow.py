@@ -43,7 +43,7 @@ class JellyHAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         """Initialize the config flow."""
-        """Initialize the config flow."""
+
         self._server_url: str | None = None
         self._api_key: str | None = None
         self._username: str | None = None
@@ -52,6 +52,7 @@ class JellyHAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._user_id: str | None = None
         self._libraries: list[dict[str, Any]] = []
         self._api: JellyfinApiClient | None = None
+        self._server_id: str | None = None
 
     async def async_step_reauth(
         self, entry_data: dict[str, Any]
@@ -134,10 +135,14 @@ class JellyHAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._api_key = user_input[CONF_API_KEY]
             session = async_get_clientsession(self.hass)
-            self._api = JellyfinApiClient(self._server_url, self._api_key, session)
+            self._api = JellyfinApiClient(self._server_url, session=session, api_key=self._api_key)
 
             try:
-                await self._api.validate_connection()
+                server_info = await self._api.validate_connection()
+                
+                # Store Server ID for later validation
+                if unique_id := server_info.get("Id"):
+                    self._server_id = unique_id
                 
                 # Check if this is a reauth flow
                 if self.context.get("source") == config_entries.SOURCE_REAUTH:
@@ -178,6 +183,11 @@ class JellyHAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             try:
                 auth_data = await self._api.authenticate(self._username, self._password)
+                
+                # Store Server ID
+                if unique_id := auth_data.get("ServerId"):
+                     self._server_id = unique_id
+
                 self._api_key = auth_data.get("AccessToken")
                 # User ID might be returned in auth data, but we still fetch users list for selection consistency
                 # or we could skip specific user selection if we want to bind to the logged-in user.
@@ -262,6 +272,12 @@ class JellyHAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 (u["Name"] for u in self._users if u["Id"] == self._user_id),
                 "Jellyfin",
             )
+
+            # Set unique ID using Server ID + User ID
+            if self._server_id and self._user_id:
+                unique_id = f"{self._server_id}_{self._user_id}"
+                await self.async_set_unique_id(unique_id)
+                self._abort_if_unique_id_configured()
 
             return self.async_create_entry(
                 title=f"JellyHA ({user_name})",
@@ -445,7 +461,11 @@ class JellyHAOptionsFlowHandler(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
         if user_input is not None:
              # Validate
-             api = JellyfinApiClient(self._server_url, user_input[CONF_API_KEY], async_get_clientsession(self.hass))
+             api = JellyfinApiClient(
+                 self._server_url, 
+                 session=async_get_clientsession(self.hass), 
+                 api_key=user_input[CONF_API_KEY]
+             )
              try:
                  await api.validate_connection()
                  # Verify auth works by fetching users

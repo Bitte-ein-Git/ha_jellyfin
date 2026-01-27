@@ -61,7 +61,7 @@ class JellyHAImageView(HomeAssistantView):
         url = f"{client._server_url}/Items/{item_id}/Images/{image_type}"
         
         try:
-            session = await client._get_session()
+            session = client._session
             async with session.get(
                 url, 
                 headers=client._headers, 

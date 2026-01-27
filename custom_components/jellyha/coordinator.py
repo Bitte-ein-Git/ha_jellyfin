@@ -193,9 +193,16 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             raise UpdateFailed(f"Error fetching data: {err}") from err
 
     async def _compute_data_hash(self, items: list[dict[str, Any]], next_up_items: list[dict[str, Any]] = None) -> str:
-        """Compute a hash of item data to detect changes."""
+        """Compute a hash of item data to detect changes (runs in executor)."""
+        return await self.hass.async_add_executor_job(
+            self._compute_data_hash_sync, items, next_up_items
+        )
+
+    def _compute_data_hash_sync(self, items: list[dict[str, Any]], next_up_items: list[dict[str, Any]] = None) -> str:
+        """Synchronous implementation of hash computation."""
         # Include item IDs, count, and key changing attributes like is_played
         hash_data = []
+        # Sorting is CPU intensive for large lists
         for item in sorted(items, key=lambda x: x.get("id", "")):
             hash_data.append(f"{item.get('id')}:{item.get('is_played')}:{item.get('is_favorite')}:{item.get('date_added')}")
         
@@ -211,14 +218,13 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Transform raw Jellyfin item to our schema."""
         item_id = item.get("Id", "")
         item_type = item.get("Type", "")
-        provider_ids = item.get("ProviderIds", {})
 
         # Runtime in minutes (Jellyfin returns ticks, 1 tick = 100 nanoseconds)
         runtime_ticks = item.get("RunTimeTicks", 0)
         runtime_minutes = int(runtime_ticks / 600_000_000) if runtime_ticks else None
 
-        # Get appropriate rating based on type (IMDB for movies, TMDB for TV)
-        rating = self._get_rating(item_type, provider_ids, item.get("CommunityRating"))
+        # Simplified rating (matches our simplified _get_rating)
+        rating = item.get("CommunityRating")
 
         return {
             "id": item_id,
@@ -228,17 +234,16 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "runtime_minutes": runtime_minutes,
             "genres": item.get("Genres", []),
             "rating": rating,
-            "rating_imdb": provider_ids.get("Imdb"),
-            "rating_tmdb": provider_ids.get("Tmdb"),
+            # Removed separate provider ratings to save memory
             "description": item.get("Overview", ""),
             "poster_url": f"/api/jellyha/image/{self.entry.entry_id}/{item_id}/Primary?tag={item.get('ImageTags', {}).get('Primary', '')}",
-            "backdrop_url": f"/api/jellyha/image/{self.entry.entry_id}/{item_id}/Backdrop?tag={item.get('BackdropImageTags', [''])[0]}" if item.get('BackdropImageTags') else None,
+            #"backdrop_url": f"/api/jellyha/image/{self.entry.entry_id}/{item_id}/Backdrop?tag={item.get('BackdropImageTags', [''])[0]}" if item.get('BackdropImageTags') else None,
             "date_added": item.get("DateCreated"),
             "jellyfin_url": self._api.get_jellyfin_url(item_id),
             "is_played": item.get("UserData", {}).get("Played", False),
             "unplayed_count": item.get("UserData", {}).get("UnplayedItemCount"),
             "is_favorite": item.get("UserData", {}).get("IsFavorite", False),
-            "media_streams": item.get("MediaStreams", []),
+            #"media_streams": item.get("MediaStreams", []), # Removed for optimization
             "official_rating": item.get("OfficialRating"),
             "trailer_url": next((t["Url"] for t in item.get("RemoteTrailers", []) if t.get("Url")), None),
             "last_played_date": item.get("UserData", {}).get("LastPlayedDate"),
@@ -251,18 +256,8 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         community_rating: float | None,
     ) -> float | None:
         """Get the appropriate rating based on item type (IMDB for movies, TMDB for TV)."""
-        if item_type == ITEM_TYPE_MOVIE:
-            # Prefer IMDB for movies
-            if imdb_id := provider_ids.get("Imdb"):
-                # Note: We have IMDB ID, but not the actual rating from IMDB
-                # We'll use community rating as fallback
-                pass
-        elif item_type == ITEM_TYPE_SERIES:
-            # Prefer TMDB for TV shows
-            if tmdb_id := provider_ids.get("Tmdb"):
-                pass
-
-        # Fall back to community rating from Jellyfin
+        # Currently we failback to community rating for all types as we don't fetch external ratings directly.
+        # Future enhancement: Map provider IDs to external ratings if available in extended metadata.
         return community_rating
 
 
@@ -312,6 +307,8 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
 
         try:
             sessions = await self._api.get_sessions()
+            # Fire events even during polling to ensure automation triggers work
+            self._fire_session_events(sessions)
             return sessions
         except JellyfinApiError as err:
             raise UpdateFailed(f"Error fetching sessions: {err}") from err
@@ -321,14 +318,14 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         _LOGGER.debug("Coordinator received %d sessions from WS", len(sessions))
         
         # Fire events for device triggers
-        await self._fire_session_events(sessions)
+        self._fire_session_events(sessions)
         
         for s in sessions:
              _LOGGER.debug("Session user: %s, Device: %s, NowPlaying: %s", 
                            s.get("UserId"), s.get("DeviceName"), "Yes" if "NowPlayingItem" in s else "No")
         self.async_set_updated_data(sessions)
 
-    async def _fire_session_events(self, current_sessions: list[dict[str, Any]]) -> None:
+    def _fire_session_events(self, current_sessions: list[dict[str, Any]]) -> None:
         """Fire events based on session state changes."""
         if not self._device_id:
             dev_reg = dr.async_get(self.hass)

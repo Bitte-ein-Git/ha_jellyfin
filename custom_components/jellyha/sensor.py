@@ -90,7 +90,7 @@ class JellyHABaseSensor(CoordinatorEntity[JellyHALibraryCoordinator], SensorEnti
         self._attr_unique_id = f"{entry.entry_id}_{sensor_key}"
         
         # Set entity_id to use device_name prefix (e.g., sensor.jellyha_library)
-        self.entity_id = f"sensor.{device_name}_{sensor_key}"
+        # self.entity_id = f"sensor.{device_name}_{sensor_key}"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -369,11 +369,11 @@ class JellyHAUserSensor(CoordinatorEntity[JellyHASessionCoordinator], SensorEnti
         # Unique ID specifically for this user's viewing state
         self._attr_unique_id = f"{entry.entry_id}_now_playing_{user_id}"
         self._attr_name = f"Now Playing {username}"
-        self.entity_id = generate_entity_id(
-            "sensor.{}", 
-            f"jellyha_now_playing_{username}", 
-            hass=coordinator.hass
-        )
+        # self.entity_id = generate_entity_id(
+        #     "sensor.{}", 
+        #     f"jellyha_now_playing_{username}", 
+        #     hass=coordinator.hass
+        # )
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -414,11 +414,12 @@ class JellyHAUserSensor(CoordinatorEntity[JellyHASessionCoordinator], SensorEnti
             "session_id": session.get("Id"),
             "device_name": session.get("DeviceName"),
             "client": session.get("Client"),
-            "item_id": "",
-            "title": "",
+            "item_id": None,
+            "title": None,
             "progress_percent": 0,
             "position_ticks": 0,
             "image_url": None,
+            "backdrop_url": None,
             "media_type": None,
             "is_paused": False,
         }
@@ -426,8 +427,9 @@ class JellyHAUserSensor(CoordinatorEntity[JellyHASessionCoordinator], SensorEnti
         if "NowPlayingItem" in session:
             item = session["NowPlayingItem"]
             item_type = item.get("Type")
+            item_id = item.get("Id")
             
-            attributes["item_id"] = item.get("Id")
+            attributes["item_id"] = item_id
             attributes["media_type"] = item_type
             attributes["official_rating"] = item.get("OfficialRating")
             attributes["community_rating"] = item.get("CommunityRating")
@@ -458,26 +460,24 @@ class JellyHAUserSensor(CoordinatorEntity[JellyHASessionCoordinator], SensorEnti
             
             attributes["is_paused"] = play_state.get("IsPaused", False)
             attributes["position_ticks"] = position_ticks
-            if duration_ticks > 0:
+            if duration_ticks and duration_ticks > 0:
                 attributes["progress_percent"] = int((position_ticks / duration_ticks) * 100)
 
-            # Image
-            image_id = item.get("Id")
-            if image_id:
-                # Use session coordinator's API client reference
-                server_url = self.coordinator._api._server_url
+            # Image Proxy URL
+            if item_id:
+                # Use the HA Proxy view instead of direct Jellyfin URL
+                # /api/jellyha/image/{entry_id}/{item_id}/{image_type}
                 attributes["image_url"] = (
-                    f"{server_url}/Items/{image_id}/Images/Primary"
-                    f"?maxHeight=300&quality=90"
+                    f"/api/jellyha/image/{self._entry.entry_id}/{item_id}/Primary"
+                    f"?tag={item.get('ImageTags', {}).get('Primary', '')}"
                 )
             
             # Backdrop Logic
             backdrop_tags = item.get("BackdropImageTags", [])
-            if backdrop_tags:
-                server_url = self.coordinator._api._server_url
+            if backdrop_tags and item_id:
                 attributes["backdrop_url"] = (
-                    f"{server_url}/Items/{image_id}/Images/Backdrop/0"
-                    f"?maxWidth=800&quality=60"
+                    f"/api/jellyha/image/{self._entry.entry_id}/{item_id}/Backdrop"
+                    f"?tag={backdrop_tags[0]}"
                 )
 
         return attributes
@@ -528,7 +528,8 @@ class JellyHAWebSocketStatusSensor(CoordinatorEntity[JellyHALibraryCoordinator],
         self._device_name = device_name
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_websocket_status"
-        self.entity_id = f"sensor.{device_name}_websocket"
+        self._attr_unique_id = f"{entry.entry_id}_websocket_status"
+        # self.entity_id = f"sensor.{device_name}_websocket"
 
     @property
     def native_value(self) -> str:
@@ -585,7 +586,8 @@ class JellyHAActiveSessionsSensor(CoordinatorEntity[JellyHASessionCoordinator], 
         self._device_name = device_name
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_active_sessions"
-        self.entity_id = f"sensor.{device_name}_active_sessions"
+        self._attr_unique_id = f"{entry.entry_id}_active_sessions"
+        # self.entity_id = f"sensor.{device_name}_active_sessions"
 
     @property
     def native_value(self) -> int:

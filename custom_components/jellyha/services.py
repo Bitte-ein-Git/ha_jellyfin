@@ -31,18 +31,41 @@ SERVICE_REFRESH_LIBRARY = "refresh_library"
 SERVICE_DELETE_ITEM = "delete_item"
 SERVICE_SESSION_CONTROL = "session_control"
 SERVICE_SESSION_SEEK = "session_seek"
+SERVICE_PLAY_ON_CHROMECAST = "play_on_chromecast"
+SERVICE_REFRESH_LIBRARY = "refresh_library"
+SERVICE_DELETE_ITEM = "delete_item"
+SERVICE_SESSION_CONTROL = "session_control"
+SERVICE_SESSION_SEEK = "session_seek"
 SERVICE_SEARCH = "search"
+
+def _get_coordinator(hass: HomeAssistant, config_entry_id: str | None = None):
+    """Get the JellyHA coordinator."""
+    if config_entry_id:
+        entry = hass.config_entries.async_get_entry(config_entry_id)
+        if entry and hasattr(entry, "runtime_data") and entry.runtime_data:
+             return entry.runtime_data.library
+        raise ValueError(f"Config entry {config_entry_id} not found or not loaded")
+
+    # Default to first available
+    jellyha_entries = hass.config_entries.async_entries(DOMAIN)
+    for entry in jellyha_entries:
+        if hasattr(entry, "runtime_data") and entry.runtime_data:
+             return entry.runtime_data.library
+             
+    raise ValueError("No JellyHA integration loaded")
 
 PLAY_ON_CHROMECAST_SCHEMA = vol.Schema(
     {
         vol.Required("entity_id"): cv.entity_id,
         vol.Required("item_id"): cv.string,
+        vol.Optional("config_entry_id"): cv.string,
     }
 )
 
 DELETE_ITEM_SCHEMA = vol.Schema(
     {
         vol.Required("item_id"): cv.string,
+        vol.Optional("config_entry_id"): cv.string,
     }
 )
 
@@ -50,6 +73,7 @@ SESSION_CONTROL_SCHEMA = vol.Schema(
     {
         vol.Required("session_id"): cv.string,
         vol.Required("command"): vol.In(["Pause", "Unpause", "TogglePause", "Stop"]),
+        vol.Optional("config_entry_id"): cv.string,
     }
 )
 
@@ -57,6 +81,7 @@ SESSION_SEEK_SCHEMA = vol.Schema(
     {
         vol.Required("session_id"): cv.string,
         vol.Required("position_ticks"): cv.positive_int,
+        vol.Optional("config_entry_id"): cv.string,
     }
 )
 
@@ -72,6 +97,7 @@ SEARCH_SCHEMA = vol.Schema(
         vol.Optional("min_rating"): vol.Coerce(float),
         vol.Optional("season"): cv.positive_int,
         vol.Optional("episode"): cv.positive_int,
+        vol.Optional("config_entry_id"): cv.string,
     }
 )
 
@@ -102,13 +128,16 @@ async def async_register_services(hass: HomeAssistant) -> None:
         season = call.data.get("season")
         episode = call.data.get("episode")
 
-        # Find first loaded config entry for JellyHA
-        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
-        coordinator = None
-        for entry in jellyha_entries:
-            if hasattr(entry, "runtime_data") and entry.runtime_data:
-                coordinator = entry.runtime_data.library
-                break
+        episode = call.data.get("episode")
+        config_entry_id = call.data.get("config_entry_id")
+
+        try:
+            coordinator = _get_coordinator(hass, config_entry_id)
+        except ValueError as e:
+            raise ValueError(str(e)) from e
+        
+        if not coordinator._api:
+             raise ValueError("API not initialized")
         
         if not coordinator or not coordinator._api:
             # We fail gracefully or raise error. 
@@ -168,20 +197,13 @@ async def async_register_services(hass: HomeAssistant) -> None:
         """Play a Jellyfin item using Tuned 2026 Strategy."""
         target_entity_id = call.data["entity_id"]
         item_id = call.data["item_id"]
+        config_entry_id = call.data.get("config_entry_id")
 
-        # Find coordinator
-        if DOMAIN in hass.data:
-            # New architectural approach: Iterate over config entries
-            # hass.data[DOMAIN] is no longer a dict of entries
-            # We must use hass.config_entries.async_entries(DOMAIN) check
-            pass
-
-        # Find first loaded config entry for JellyHA
-        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
-        for entry in jellyha_entries:
-            if hasattr(entry, "runtime_data") and entry.runtime_data:
-                coordinator = entry.runtime_data.library
-                break
+        try:
+            coordinator = _get_coordinator(hass, config_entry_id)
+        except ValueError:
+            _LOGGER.error("No JellyHA integration found for playback")
+            return
 
         if not coordinator or not coordinator._api:
             _LOGGER.error("No JellyHA API client found")
@@ -229,9 +251,13 @@ async def async_register_services(hass: HomeAssistant) -> None:
                 friendly_name = entity_state.attributes.get("friendly_name")
                 if friendly_name:
                     import pychromecast
-                    chromecasts, browser = await hass.async_add_executor_job(
-                        pychromecast.get_listed_chromecasts, [friendly_name]
-                    )
+                    def _discover_cast():
+                        return pychromecast.get_listed_chromecasts(
+                            [friendly_name],
+                            discovery_timeout=5.0
+                        )
+
+                    chromecasts, browser = await hass.async_add_executor_job(_discover_cast)
                     if chromecasts:
                         cast_device = chromecasts[0]
                         model_name = cast_device.model_name
@@ -320,7 +346,20 @@ async def async_register_services(hass: HomeAssistant) -> None:
 
     async def async_refresh_library(call: ServiceCall) -> None:
         """Force refresh library data."""
-        # Iterate over config entries
+        config_entry_id = call.data.get("config_entry_id")
+        
+        if config_entry_id:
+             try:
+                 coordinator = _get_coordinator(hass, config_entry_id)
+                 await coordinator.async_refresh()
+                 _LOGGER.info("Library refresh triggered for %s", config_entry_id)
+                 return
+             except ValueError:
+                 _LOGGER.error("Config entry %s not found for refresh", config_entry_id)
+                 return
+
+        # Default: Refresh ALL if no ID specified (or refactor to refresh first found)
+        # To maintain previous behavior (refresh all), we iterate.
         jellyha_entries = hass.config_entries.async_entries(DOMAIN)
         for entry in jellyha_entries:
             if hasattr(entry, "runtime_data") and entry.runtime_data:
@@ -338,13 +377,13 @@ async def async_register_services(hass: HomeAssistant) -> None:
     async def async_delete_item(call: ServiceCall) -> None:
         """Delete an item from Jellyfin library."""
         item_id = call.data["item_id"]
+        config_entry_id = call.data.get("config_entry_id")
 
-        # Find first loaded config entry for JellyHA
-        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
-        for entry in jellyha_entries:
-            if hasattr(entry, "runtime_data") and entry.runtime_data:
-                coordinator = entry.runtime_data.library
-                break
+        try:
+            coordinator = _get_coordinator(hass, config_entry_id)
+        except ValueError:
+            _LOGGER.error("No JellyHA integration found")
+            return
 
         if not coordinator or not coordinator._api:
             _LOGGER.error("No JellyHA API client found")
@@ -372,13 +411,13 @@ async def async_register_services(hass: HomeAssistant) -> None:
         """Update favorite status for an item."""
         item_id = call.data["item_id"]
         is_favorite = call.data["is_favorite"]
+        config_entry_id = call.data.get("config_entry_id")
         
-        # Find first loaded config entry for JellyHA
-        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
-        for entry in jellyha_entries:
-            if hasattr(entry, "runtime_data") and entry.runtime_data:
-                coordinator = entry.runtime_data.library
-                break
+        try:
+            coordinator = _get_coordinator(hass, config_entry_id)
+        except ValueError:
+             _LOGGER.error("No JellyHA integration found")
+             return
         
         if not coordinator or not coordinator._api:
             _LOGGER.error("No JellyHA API client found")
@@ -403,6 +442,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
             schema=vol.Schema({
                 vol.Required("item_id"): cv.string,
                 vol.Required("is_favorite"): cv.boolean,
+                vol.Optional("config_entry_id"): cv.string,
             }),
         )
 
@@ -410,13 +450,13 @@ async def async_register_services(hass: HomeAssistant) -> None:
         """Send control command to session."""
         session_id = call.data["session_id"]
         command = call.data["command"]
+        config_entry_id = call.data.get("config_entry_id")
         
-        # Find first loaded config entry for JellyHA
-        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
-        for entry in jellyha_entries:
-            if hasattr(entry, "runtime_data") and entry.runtime_data:
-                coordinator = entry.runtime_data.library
-                break
+        try:
+            coordinator = _get_coordinator(hass, config_entry_id)
+        except ValueError:
+             _LOGGER.error("No JellyHA integration found")
+             return
         
         if not coordinator or not coordinator._api:
             _LOGGER.error("No JellyHA API client found")
@@ -428,13 +468,13 @@ async def async_register_services(hass: HomeAssistant) -> None:
         """Send seek command to session."""
         session_id = call.data["session_id"]
         ticks = call.data["position_ticks"]
+        config_entry_id = call.data.get("config_entry_id")
         
-        # Find first loaded config entry for JellyHA
-        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
-        for entry in jellyha_entries:
-            if hasattr(entry, "runtime_data") and entry.runtime_data:
-                coordinator = entry.runtime_data.library
-                break
+        try:
+            coordinator = _get_coordinator(hass, config_entry_id)
+        except ValueError:
+             _LOGGER.error("No JellyHA integration found")
+             return
         
         if not coordinator or not coordinator._api:
             _LOGGER.error("No JellyHA API client found")
@@ -462,13 +502,13 @@ async def async_register_services(hass: HomeAssistant) -> None:
         """Update watched status for an item."""
         item_id = call.data["item_id"]
         is_played = call.data["is_played"]
+        config_entry_id = call.data.get("config_entry_id")
         
-        # Find first loaded config entry for JellyHA
-        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
-        for entry in jellyha_entries:
-            if hasattr(entry, "runtime_data") and entry.runtime_data:
-                coordinator = entry.runtime_data.library
-                break
+        try:
+            coordinator = _get_coordinator(hass, config_entry_id)
+        except ValueError:
+             _LOGGER.error("No JellyHA integration found")
+             return
         
         if not coordinator or not coordinator._api:
             _LOGGER.error("No JellyHA API client found")
@@ -493,6 +533,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
             schema=vol.Schema({
                 vol.Required("item_id"): cv.string,
                 vol.Required("is_played"): cv.boolean,
+                vol.Optional("config_entry_id"): cv.string,
             }),
         )
 
@@ -557,6 +598,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
         {
             vol.Required("item_id"): cv.string,
             vol.Optional("limit", default=5): cv.positive_int,
+            vol.Optional("config_entry_id"): cv.string,
         }
     )
 
@@ -564,14 +606,15 @@ async def async_register_services(hass: HomeAssistant) -> None:
         """Get recommendations for an item."""
         item_id = call.data["item_id"]
         limit = call.data.get("limit", 5)
+        config_entry_id = call.data.get("config_entry_id")
 
-        # Find first loaded config entry for JellyHA
-        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
-        coordinator = None
-        for entry in jellyha_entries:
-            if hasattr(entry, "runtime_data") and entry.runtime_data:
-                coordinator = entry.runtime_data.library
-                break
+        try:
+            coordinator = _get_coordinator(hass, config_entry_id)
+        except ValueError as e:
+            raise ValueError(str(e)) from e
+            
+        if not coordinator._api:
+             raise ValueError("API not initialized")
         
         if not coordinator or not coordinator._api:
             raise ValueError("No JellyHA integration loaded")
@@ -615,20 +658,22 @@ async def async_register_services(hass: HomeAssistant) -> None:
     GET_ITEM_SCHEMA = vol.Schema(
         {
             vol.Required("item_id"): cv.string,
+            vol.Optional("config_entry_id"): cv.string,
         }
     )
 
     async def async_get_item(call: ServiceCall) -> ServiceResponse:
         """Get full details for an item."""
         item_id = call.data["item_id"]
+        config_entry_id = call.data.get("config_entry_id")
 
-        # Find first loaded config entry for JellyHA
-        jellyha_entries = hass.config_entries.async_entries(DOMAIN)
-        coordinator = None
-        for entry in jellyha_entries:
-            if hasattr(entry, "runtime_data") and entry.runtime_data:
-                coordinator = entry.runtime_data.library
-                break
+        try:
+            coordinator = _get_coordinator(hass, config_entry_id)
+        except ValueError as e:
+            raise ValueError(str(e)) from e
+
+        if not coordinator._api:
+             raise ValueError("API not initialized")
         
         if not coordinator or not coordinator._api:
             raise ValueError("No JellyHA integration loaded")
@@ -647,6 +692,15 @@ async def async_register_services(hass: HomeAssistant) -> None:
             raise ValueError(f"Get Item failed: {err}") from err
 
         # Return full item dictionary directly
+             
+        # Return full item dictionary with mapped keys for frontend
+        if "MediaSources" in item and item["MediaSources"]:
+             # Usually the first source is the main file
+             item["media_streams"] = item["MediaSources"][0].get("MediaStreams", [])
+        elif "MediaStreams" in item:
+             item["media_streams"] = item["MediaStreams"]
+             
+        # Map other potential missing fields if necessary, but start with streams
         return {"item": item}
 
     if not hass.services.has_service(DOMAIN, "get_item"):

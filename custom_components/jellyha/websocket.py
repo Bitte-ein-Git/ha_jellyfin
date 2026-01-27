@@ -133,12 +133,18 @@ async def websocket_get_next_up(
         connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Library coordinator not found")
         return
 
-    if not coordinator.api:
+    if not coordinator._api:
          await coordinator._async_setup()
 
     try:
-        user_id = coordinator.entry.data["user_id"]
-        next_up = await coordinator.api.get_next_up_episode(user_id, series_id)
+        # Use .get() for safety, though it should be there if config flow worked
+        user_id = coordinator.entry.data.get("user_id")
+        if not user_id:
+             connection.send_error(msg["id"], websocket_api.ERR_INVALID_FORMAT, "User ID missing from config")
+             return
+
+        _LOGGER.debug(f"Fetching Next Up for user {user_id}, series {series_id}")
+        next_up = await coordinator._api.get_next_up_episode(user_id, series_id)
         
         if next_up:
             # Transform using coordinator's helper
@@ -147,13 +153,19 @@ async def websocket_get_next_up(
             # Jellyfin 'ParentIndexNumber' is Season Number, 'IndexNumber' is Episode Number
             item["season"] = next_up.get("ParentIndexNumber")
             item["episode"] = next_up.get("IndexNumber")
-            item["season_nam"] = next_up.get("SeasonName")
+            item["season_name"] = next_up.get("SeasonName")
+            
+            # Map media streams if present (logic copied from services.py)
+            if "MediaSources" in next_up and next_up["MediaSources"]:
+                 item["media_streams"] = next_up["MediaSources"][0].get("MediaStreams", [])
+                 
             connection.send_result(msg["id"], {"item": item})
         else:
             connection.send_result(msg["id"], {"item": None})
             
     except Exception as err:
-        connection.send_error(msg["id"], websocket_api.ERR_UNKNOWN_ERROR, str(err))
+        _LOGGER.exception("Error fetching Next Up episode: %s", err)
+        connection.send_error(msg["id"], websocket_api.ERR_UNKNOWN_ERROR, f"Error: {str(err)}")
 
 @websocket_api.websocket_command({
     vol.Required("type"): "jellyha/get_user_next_up",
@@ -195,11 +207,11 @@ async def websocket_get_user_next_up(
 
     # Fallback to direct fetch if cache miss (e.g. first run)
     try:
-        if not coordinator.api:
+        if not coordinator._api:
             await coordinator._async_setup()
             
         user_id = coordinator.entry.data["user_id"]
-        raw_next_up = await coordinator.api.get_next_up_items(user_id=user_id, limit=20)
+        raw_next_up = await coordinator._api.get_next_up_items(user_id=user_id, limit=20)
         items = []
         if raw_next_up:
             items = [coordinator._transform_item(item) for item in raw_next_up]

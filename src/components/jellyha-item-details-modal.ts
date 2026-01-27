@@ -46,6 +46,9 @@ export class JellyHAItemDetailsModal extends LitElement {
             this._fetchNextUp(this._item);
         }
 
+        // Fetch full details (MediaStreams, Backdrops) on demand
+        this._fetchFullDetails(this._item.id);
+
         await this.updateComplete;
     }
 
@@ -54,6 +57,34 @@ export class JellyHAItemDetailsModal extends LitElement {
         this._confirmDelete = false;
         this.dispatchEvent(new CustomEvent('closed', { bubbles: true, composed: true }));
         this.requestUpdate();
+    }
+
+    private async _fetchFullDetails(itemId: string): Promise<void> {
+        try {
+            // Fetch fresh details from backend (includes MediaStreams, Backdrops, etc.)
+            // Using callWS instead of callService to properly handle return_response
+            const response: any = await this.hass.callWS({
+                type: 'call_service',
+                domain: 'jellyha',
+                service: 'get_item',
+                service_data: {
+                    item_id: itemId,
+                    config_entry_id: this._item?.config_entry_id
+                },
+                return_response: true
+            });
+
+            // Access nested response from service call
+            const serviceResponse = response?.response || response;
+
+            if (serviceResponse && serviceResponse.item) {
+                // Merge details into existing item
+                this._item = { ...this._item!, ...serviceResponse.item };
+                this.requestUpdate();
+            }
+        } catch (err) {
+            console.warn('Failed to fetch full item details:', JSON.stringify(err, null, 2));
+        }
     }
 
     private async _fetchNextUp(series: MediaItem): Promise<void> {
@@ -120,6 +151,12 @@ export class JellyHAItemDetailsModal extends LitElement {
                 --mdc-dialog-z-index: 9999;
                 --mdc-dialog-min-width: 400px;
                 --mdc-dialog-max-width: 90vw;
+                --mdc-theme-surface: transparent; 
+                --ha-dialog-background: transparent;
+                --mdc-dialog-box-shadow: none;
+                --dialog-content-padding: 0;
+                --mdc-dialog-content-padding: 0;
+                --dialog-surface-margin: 0;
              }
 
             .content {
@@ -131,11 +168,31 @@ export class JellyHAItemDetailsModal extends LitElement {
                 will-change: transform;
                 background: var(--ha-card-background, var(--card-background-color, #1c1c1c));
                 border-radius: 20px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.5); /* Card shadow */
                 padding: 24px;
                 overflow-y: auto;
                 max-height: 80vh;
                 display: block; /* Use block for mobile flow, or flex/grid as needed */
                 overscroll-behavior-y: contain; /* Prevent browser overscroll/refresh */
+                
+                /* Hide scrollbar for cleaner mobile look */
+                scrollbar-width: none; /* Firefox */
+                -ms-overflow-style: none; /* IE/Edge */
+            }
+            
+            /* Aggressive scrollbar hiding for WebKit (Chrome/Safari/Android) */
+            .content::-webkit-scrollbar {
+                display: none; 
+                width: 0px !important;
+                height: 0px !important;
+                background: transparent;
+            }
+            .content::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .content::-webkit-scrollbar-thumb {
+                background: transparent;
+                border: none;
             }
 
             @media (min-width: 601px) {
@@ -206,17 +263,25 @@ export class JellyHAItemDetailsModal extends LitElement {
             .stats-row {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 16px;
-                padding: 12px;
-                border-radius: 8px;
-                font-size: 0.95rem;
-                background: var(--secondary-background-color, rgba(0,0,0,0.2));
+                gap: 8px; /* Tighter gap for chips */
+                padding: 4px 0; /* Minimal vertical padding */
+                /* Remove container background for native look */
+                background: transparent;
+                border-radius: 0;
             }
 
             .stat-item {
                 display: flex;
                 gap: 6px;
                 align-items: center;
+                /* Native Chip Styling */
+                border: 1px solid var(--divider-color);
+                border-radius: 18px;
+                padding: 6px 12px;
+                font-size: 0.9rem;
+                font-weight: 500;
+                color: var(--primary-text-color);
+                background: transparent; 
             }
 
             .description {
@@ -331,19 +396,25 @@ export class JellyHAItemDetailsModal extends LitElement {
 
             /* Next Up Section */
             .next-up-card {
-                background: rgba(0,0,0,0.2);
+                background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
                 border-radius: 12px;
-                padding: 16px;
+                padding: 12px;
                 display: flex;
                 gap: 16px;
                 align-items: center;
                 margin-top: 16px;
                 border: 1px solid var(--divider-color);
                 cursor: pointer;
-                transition: background 0.2s;
+                transition: background 0.2s, transform 0.1s;
+                position: relative;
+                overflow: hidden;
             }
             .next-up-card:hover {
-                background: rgba(0,0,0,0.4);
+                background: rgba(var(--rgb-primary-text-color), 0.05);
+            }
+            .next-up-card:active {
+                background: rgba(var(--rgb-primary-text-color), 0.1);
+                transform: scale(0.98); /* Button press effect */
             }
             .next-up-thumb {
                 width: 120px;
@@ -399,7 +470,7 @@ export class JellyHAItemDetailsModal extends LitElement {
                 hideActions
                 .heading=${""} 
             >
-                <div 
+                <ha-card 
                     class="content"
                     style="${this._isDragging || this._currentTranslateY > 0 ? `transform: translateY(${this._currentTranslateY}px); transition: ${this._isDragging ? 'none' : 'transform 0.3s ease-out'}` : ''}"
                 >
@@ -434,11 +505,11 @@ export class JellyHAItemDetailsModal extends LitElement {
                                      <ha-icon icon="${item.is_favorite ? 'mdi:heart' : 'mdi:heart-outline'}"></ha-icon>
                                 </button>
 
-                                <a href="${item.jellyfin_url}" class="action-btn" target="_blank" title="Open in Jellyfin">
+                                <a href="${item.jellyfin_url}" class="action-btn" target="_blank" title="Open in Jellyfin" @click=${() => this._haptic()}>
                                     <ha-icon icon="mdi:popcorn"></ha-icon>
                                 </a>
 
-                                <button class="action-btn" @click=${() => this._confirmDelete = true} title="Delete Item">
+                                <button class="action-btn" @click=${() => { this._haptic(); this._confirmDelete = true; }} title="Delete Item">
                                     <ha-icon icon="mdi:trash-can-outline"></ha-icon>
                                 </button>
                             `}
@@ -463,7 +534,7 @@ export class JellyHAItemDetailsModal extends LitElement {
                                     <h3 class="next-up-title">${this._nextUpItem.name}</h3>
                                     <span class="next-up-meta">S${this._nextUpItem.season} : E${this._nextUpItem.episode} • ${this._formatRuntime(this._nextUpItem.runtime_minutes)}</span>
                                 </div>
-                                <ha-icon icon="mdi:play-circle-outline" style="font-size: 32px; opacity: 0.8;"></ha-icon>
+                                <ha-icon icon="mdi:play-circle" style="font-size: 36px; color: var(--primary-color); opacity: 1;"></ha-icon>
                             </div>
                         ` : nothing}
 
@@ -496,10 +567,10 @@ export class JellyHAItemDetailsModal extends LitElement {
                          <div class="divider"></div>
 
                          <div class="media-info-grid">
-                            ${this._renderMediaDetails(item)}
+                            ${this._renderMediaDetails(isSeries && this._nextUpItem ? this._nextUpItem : item)}
                          </div>
                     </div>
-                </div>
+                </ha-card>
             </ha-dialog>
         `;
     }
@@ -516,19 +587,26 @@ export class JellyHAItemDetailsModal extends LitElement {
         const details: TemplateResult[] = [];
         const streams = item.media_streams || [];
 
-        streams.forEach(stream => {
-            if (stream.Type === 'Video') {
-                details.push(html`<div class="info-pair"><b>Video</b><span>${stream.Codec?.toUpperCase()}</span></div>`);
-                details.push(html`<div class="info-pair"><b>Resolution</b><span>${stream.Width}x${stream.Height}</span></div>`);
-            } else if (stream.Type === 'Audio' && stream.Index === 1) {
-                details.push(html`<div class="info-pair"><b>Audio</b><span>${stream.Codec?.toUpperCase()}</span></div>`);
-                details.push(html`<div class="info-pair"><b>Channels</b><span>${stream.Channels} ch</span></div>`);
-            }
-        });
+        // Find Video Stream
+        const videoStream = streams.find(s => s.Type?.toLowerCase() === 'video');
+        if (videoStream) {
+            if (videoStream.Codec) details.push(html`<div class="info-pair"><b>Video</b><span>${videoStream.Codec.toUpperCase()}</span></div>`);
+            if (videoStream.Width && videoStream.Height) details.push(html`<div class="info-pair"><b>Resolution</b><span>${videoStream.Width}x${videoStream.Height}</span></div>`);
+        }
+
+        // Find Primary Audio Stream (Default or First)
+        const audioStream = streams.find(s => s.Type?.toLowerCase() === 'audio' && !!s.IsDefault) ||
+            streams.find(s => s.Type?.toLowerCase() === 'audio');
+
+        if (audioStream) {
+            if (audioStream.Codec) details.push(html`<div class="info-pair"><b>Audio</b><span>${audioStream.Codec.toUpperCase()}</span></div>`);
+            if (audioStream.Channels) details.push(html`<div class="info-pair"><b>Channels</b><span>${audioStream.Channels} ch</span></div>`);
+        }
         return details;
     }
 
     private _handlePlay = async () => {
+        this._haptic();
         if (!this._item || !this._defaultCastDevice) {
             if (!this._defaultCastDevice) {
                 alert('No default cast device configured.');
@@ -546,7 +624,18 @@ export class JellyHAItemDetailsModal extends LitElement {
         }
     }
 
+    private _haptic(type: 'selection' | 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'failure' = 'selection') {
+        const event = new CustomEvent('haptic', {
+            detail: type,
+            bubbles: true,
+            composed: true
+        });
+        this.dispatchEvent(event);
+    }
+
     private _playNextUp = async () => {
+        this._haptic();
+
         if (!this._nextUpItem || !this._defaultCastDevice) {
             if (!this._defaultCastDevice) alert('No default cast device configured.');
             return;
@@ -564,6 +653,7 @@ export class JellyHAItemDetailsModal extends LitElement {
 
     private _handleFavorite = async () => {
         if (!this._item) return;
+        this._haptic(); // Feedback
         const newStatus = !this._item.is_favorite;
         this._item = { ...this._item, is_favorite: newStatus };
 
@@ -576,6 +666,7 @@ export class JellyHAItemDetailsModal extends LitElement {
 
     private _handleWatched = async () => {
         if (!this._item) return;
+        this._haptic(); // Feedback
         const newStatus = !this._item.is_played;
         this._item = { ...this._item, is_played: newStatus };
 
@@ -588,6 +679,7 @@ export class JellyHAItemDetailsModal extends LitElement {
 
     private _handleDeleteConfirm = async () => {
         if (!this._item) return;
+        this._haptic(); // Feedback
         const itemId = this._item.id;
         this.closeDialog();
 
@@ -597,6 +689,7 @@ export class JellyHAItemDetailsModal extends LitElement {
     }
 
     private _handleWatchTrailer = () => {
+        this._haptic();
         const item = this._item;
         if (!item?.trailer_url) return;
         const url = item.trailer_url;
@@ -646,16 +739,28 @@ export class JellyHAItemDetailsModal extends LitElement {
     private _getScrollParent(node: HTMLElement | null): HTMLElement | null {
         if (!node) return null;
 
-        // Traverse up
         let parent = node;
         while (parent && parent !== this._portalContainer && parent !== document.body) {
-            // Check if element is scrollable
-            const overflowY = window.getComputedStyle(parent).overflowY;
-            const isScrollable = (overflowY === 'auto' || overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight;
+            // Optimization: The '.content' element is our main scroll container.
+            // Check it explicitly to avoid costly getComputedStyle in loop if possible.
+            if (parent.classList?.contains('content')) {
+                if (parent.scrollHeight > parent.clientHeight) {
+                    return parent;
+                }
+                // If content fits, it's not scrolling, so we can swipe locally
+                return null;
+            }
 
-            if (isScrollable) {
+            // Fallback for nested scrollables (e.g. strict verify)
+            // Accessing scrollHeight forces reflow, but unavoidable if we want to know if it scrolls.
+            // accessing getComputedStyle forces style recalc. 
+            // We can skip getComputedStyle if we assume standard block elements aren't scrollable without it?
+            // But let's keep it safe but maybe break early?
+            const { overflowY } = window.getComputedStyle(parent);
+            if ((overflowY === 'auto' || overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight) {
                 return parent;
             }
+
             parent = parent.parentElement as HTMLElement;
         }
         return null;

@@ -43,18 +43,7 @@ PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.MEDIA_PLAYER]
 JellyHAConfigEntry = ConfigEntry[JellyHAData]
 
 
-async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Migrate old entry."""
-    _LOGGER.debug("Migrating configuration from version %s", entry.version)
 
-    if entry.version == 1:
-        # Placeholder for future interactions
-        # new_data = {**entry.data}
-        # hass.config_entries.async_update_entry(entry, data=new_data, version=2)
-        pass
-
-    _LOGGER.info("Migration to version %s successful", entry.version)
-    return True
 
 
 

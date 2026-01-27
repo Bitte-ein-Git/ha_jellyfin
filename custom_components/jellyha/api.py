@@ -37,17 +37,14 @@ class JellyfinApiClient:
     def __init__(
         self,
         server_url: str,
+        session: aiohttp.ClientSession,
         api_key: str | None = None,
-        session: aiohttp.ClientSession | None = None,
     ) -> None:
         """Initialize the API client."""
         self._server_url = server_url.rstrip("/")
         self._api_key = api_key
         self._session = session
         self._user_id: str | None = None
-
-        if session is None:
-            _LOGGER.warning("JellyfinApiClient created without shared session")
 
     @property
     def _headers(self) -> dict[str, str]:
@@ -65,12 +62,7 @@ class JellyfinApiClient:
 
         return headers
 
-    async def _get_session(self) -> aiohttp.ClientSession:
-        """Get or create aiohttp session."""
-        if self._session is None or self._session.closed:
-            # Fallback (discouraged in HA)
-            self._session = aiohttp.ClientSession()
-        return self._session
+
 
     async def _request(
         self,
@@ -80,11 +72,10 @@ class JellyfinApiClient:
     ) -> Any:
         """Make an API request with retry logic."""
         url = urljoin(self._server_url + "/", endpoint.lstrip("/"))
-        session = await self._get_session()
 
         for attempt in range(MAX_RETRIES):
             try:
-                async with session.request(
+                async with self._session.request(
                     method,
                     url,
                     headers=self._headers,
@@ -103,6 +94,10 @@ class JellyfinApiClient:
                     
                     return await response.json()
 
+            except RuntimeError as err:
+                 if "Session is closed" in str(err):
+                     raise JellyfinConnectionError("Session is closed") from err
+                 raise err
             except aiohttp.ClientError as err:
                 if attempt == MAX_RETRIES - 1:
                     raise JellyfinConnectionError(
@@ -135,10 +130,10 @@ class JellyfinApiClient:
         }
         
         url = urljoin(self._server_url + "/", "Users/AuthenticateByName")
-        session = await self._get_session()
+        url = urljoin(self._server_url + "/", "Users/AuthenticateByName")
         
         try:
-            async with session.post(
+            async with self._session.post(
                 url,
                 json={"Username": username, "Pw": password},
                 headers=headers,
@@ -232,7 +227,7 @@ class JellyfinApiClient:
     async def get_item(self, user_id: str, item_id: str) -> dict[str, Any]:
         """Get details for a single item."""
         params = {
-            "Fields": "Chapters,DateCreated,Genres,MediaStreams,Overview,ParentId,Path,People,ProviderIds,PrimaryImageAspectRatio,RemoteTrailers,SortName,Studios,Taglines,TrailerUrls,UserData,SeasonUserData,OfficialRating,CommunityRating,CumulativeRunTimeTicks,RunTimeTicks,ProductionYear,PremiereDate,ExternalUrls"
+            "Fields": "Chapters,DateCreated,Genres,MediaSources,MediaStreams,Overview,ParentId,Path,People,ProviderIds,PrimaryImageAspectRatio,RemoteTrailers,SortName,Studios,Taglines,TrailerUrls,UserData,SeasonUserData,OfficialRating,CommunityRating,CumulativeRunTimeTicks,RunTimeTicks,ProductionYear,PremiereDate,ExternalUrls"
         }
         return await self._request("GET", f"/Users/{user_id}/Items/{item_id}", params=params)
 
@@ -245,7 +240,8 @@ class JellyfinApiClient:
         params = {
             "UserId": user_id,
             "SeriesId": series_id,
-            "Limit": 1
+            "Limit": 1,
+            "Fields": "MediaSources,MediaStreams,Overview,RunTimeTicks,OfficialRating,CommunityRating"
         }
         result = await self._request("GET", "/Shows/NextUp", params=params)
         items = result.get("Items", [])
@@ -268,10 +264,16 @@ class JellyfinApiClient:
 
     async def get_similar_items(self, user_id: str, item_id: str, limit: int = 5) -> list[dict[str, Any]]:
         """Get similar items (recommendations) for a specific item."""
+        # Reduced fields for optimization
+        # Removed: MediaStreams, ProviderIds, BackdropImageTags (Used for details/playback only)
+        # Kept: Overview, RemoteTrailers, DateCreated
         params = {
-            "UserId": user_id,
+            "IncludeItemTypes": "Movie,Series,Episode",
+            "Recursive": "true",
+            "Fields": "Overview,RemoteTrailers,DateCreated",
+            "ImageTypeLimit": 1,
+            "EnableImageTypes": "Primary,Banner,Thumb",
             "Limit": limit,
-            "Fields": "PrimaryImageAspectRatio,ProviderIds,Genres,RunTimeTicks,DateCreated,CommunityRating,Overview,MediaStreams,UserData,ParentId",
         }
         result = await self._request("GET", f"/Items/{item_id}/Similar", params=params)
         
