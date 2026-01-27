@@ -12,6 +12,12 @@ export class JellyHAItemDetailsModal extends LitElement {
     @state() private _open = false;
     @state() private _confirmDelete = false;
 
+    // Swipe to close state
+    @state() private _touchStartY = 0;
+    @state() private _currentTranslateY = 0;
+    @state() private _isDragging = false;
+    private _swipeClosingThreshold = 100;
+
     private _portalContainer: HTMLElement | null = null;
 
     public connectedCallback(): void {
@@ -81,6 +87,20 @@ export class JellyHAItemDetailsModal extends LitElement {
     protected updated(): void {
         if (this._portalContainer) {
             render(this._renderDialogContent(), this._portalContainer);
+
+            // Manually attach non-passive listeners to content
+            const content = this._portalContainer.querySelector('.content');
+            if (content) {
+                // Remove old (deduping)
+                content.removeEventListener('touchstart', this._handleModalTouchStart as any);
+                content.removeEventListener('touchmove', this._handleModalTouchMove as any);
+                content.removeEventListener('touchend', this._handleModalTouchEnd as any);
+
+                // Add new
+                content.addEventListener('touchstart', this._handleModalTouchStart as any, { passive: true });
+                content.addEventListener('touchmove', this._handleModalTouchMove as any, { passive: false }); // Key fix
+                content.addEventListener('touchend', this._handleModalTouchEnd as any, { passive: true });
+            }
         }
     }
 
@@ -106,6 +126,25 @@ export class JellyHAItemDetailsModal extends LitElement {
                 display: grid;
                 grid-template-columns: 300px 1fr;
                 gap: 24px;
+                /* Enable transform for swipe closing */
+                transform-origin: top center;
+                will-change: transform;
+                background: var(--ha-card-background, var(--card-background-color, #1c1c1c));
+                border-radius: 20px;
+                padding: 24px;
+                overflow-y: auto;
+                max-height: 80vh;
+                display: block; /* Use block for mobile flow, or flex/grid as needed */
+                overscroll-behavior-y: contain; /* Prevent browser overscroll/refresh */
+            }
+
+            @media (min-width: 601px) {
+                .content {
+                    display: grid;
+                    grid-template-columns: 300px 1fr;
+                    overflow-y: visible; /* Let content determine height, dialog handles scroll if needed or max-height */
+                    max-height: none; 
+                }
             }
 
             .poster-col {
@@ -136,8 +175,6 @@ export class JellyHAItemDetailsModal extends LitElement {
                 display: flex;
                 flex-direction: column;
                 gap: 16px;
-                overflow-y: auto;
-                max-height: 60vh;
             }
 
             .header-group h1 {
@@ -339,8 +376,7 @@ export class JellyHAItemDetailsModal extends LitElement {
             }
 
             @media (max-width: 600px) {
-                .content { grid-template-columns: 1fr; }
-                .poster-col { max-width: 350px; margin: 0 auto; width: 100%; }
+                .poster-col { max-width: 350px; margin: 0 auto; width: 100%; margin-bottom: 24px; }
             }
         </style>
         `;
@@ -363,7 +399,10 @@ export class JellyHAItemDetailsModal extends LitElement {
                 hideActions
                 .heading=${""} 
             >
-                <div class="content">
+                <div 
+                    class="content"
+                    style="${this._isDragging || this._currentTranslateY > 0 ? `transform: translateY(${this._currentTranslateY}px); transition: ${this._isDragging ? 'none' : 'transform 0.3s ease-out'}` : ''}"
+                >
                     <div class="poster-col">
                         <img class="poster-img" src="${item.poster_url}" alt="${item.name}" />
 
@@ -601,6 +640,72 @@ export class JellyHAItemDetailsModal extends LitElement {
 
         // Default behavior: open in new tab
         window.open(url, '_blank');
+    }
+
+    /* Swipe to Close Logic */
+    private _getScrollParent(node: HTMLElement | null): HTMLElement | null {
+        if (!node) return null;
+
+        // Traverse up
+        let parent = node;
+        while (parent && parent !== this._portalContainer && parent !== document.body) {
+            // Check if element is scrollable
+            const overflowY = window.getComputedStyle(parent).overflowY;
+            const isScrollable = (overflowY === 'auto' || overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight;
+
+            if (isScrollable) {
+                return parent;
+            }
+            parent = parent.parentElement as HTMLElement;
+        }
+        return null;
+    }
+
+    private _handleModalTouchStart = (e: TouchEvent): void => {
+        const target = e.target as HTMLElement;
+        const scrollParent = this._getScrollParent(target);
+
+        // If we found a scrollable parent and it is scrolled down, disable swipe to close
+        if (scrollParent && scrollParent.scrollTop > 0) {
+            return;
+        }
+
+        this._touchStartY = e.touches[0].clientY;
+        this._isDragging = true;
+    }
+
+    private _handleModalTouchMove = (e: TouchEvent): void => {
+        if (!this._isDragging) return;
+
+        const deltaY = e.touches[0].clientY - this._touchStartY;
+
+        // Only allow pulling down (positive delta)
+        // If driving up (negative delta), we let native scroll handle it
+        if (deltaY > 0) {
+            // We are pulling down from top
+            if (e.cancelable) e.preventDefault();
+            this._currentTranslateY = deltaY;
+        } else {
+            // User is scrolling down (moving finger up), we let native scroll handle it
+            this._isDragging = false; // Stop tracking as a drag close
+        }
+    }
+
+    private _handleModalTouchEnd = (e: TouchEvent): void => {
+        if (!this._isDragging) return;
+        this._isDragging = false;
+
+        if (this._currentTranslateY > this._swipeClosingThreshold) {
+            // Close
+            this.closeDialog();
+            // Reset after a moment to keep UI clean ensuring dialog is gone
+            setTimeout(() => {
+                this._currentTranslateY = 0;
+            }, 300);
+        } else {
+            // Reset (snap back)
+            this._currentTranslateY = 0;
+        }
     }
 }
 

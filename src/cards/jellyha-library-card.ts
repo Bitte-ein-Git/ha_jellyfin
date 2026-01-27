@@ -310,7 +310,7 @@ export class JellyHALibraryCard extends LitElement {
    * Helper to set scroll position after page change
    */
   private _setScrollPosition(position: 'start' | 'end'): void {
-    const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper');
+    const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper, .list-wrapper');
     if (scrollContainer) {
       if (position === 'start') {
         scrollContainer.scrollLeft = 0;
@@ -325,7 +325,7 @@ export class JellyHALibraryCard extends LitElement {
    * Helper to animate page changes (Slide & Fade)
    **/
   private async _animatePageChange(direction: 'next' | 'prev', updateState: () => void): Promise<void> {
-    const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper') as HTMLElement;
+    const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper, .list-wrapper') as HTMLElement;
     if (!scrollContainer) {
       updateState();
       return;
@@ -401,7 +401,7 @@ export class JellyHALibraryCard extends LitElement {
     // Only swipe/scroll logic if horizontal movement > vertical
     if (Math.abs(diffX) > Math.abs(diffY)) {
       // Elastic Scroll Effect Logic
-      const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper') as HTMLElement;
+      const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper, .list-wrapper') as HTMLElement;
       if (scrollContainer && Math.abs(diffX) > 0) {
         const { scrollLeft, scrollWidth, clientWidth } = scrollContainer;
         const maxScroll = scrollWidth - clientWidth;
@@ -450,7 +450,7 @@ export class JellyHALibraryCard extends LitElement {
   private _handleTouchEnd(e: TouchEvent): void {
     // Handle Elastic Reset
     if (this._isOverscrolling) {
-      const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper') as HTMLElement;
+      const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper, .list-wrapper') as HTMLElement;
       if (scrollContainer) {
         scrollContainer.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.8, 0.5, 1)';
         scrollContainer.style.transform = '';
@@ -477,7 +477,7 @@ export class JellyHALibraryCard extends LitElement {
     const diffX = e.changedTouches[0].clientX - this._touchStartX;
     const threshold = 50; // Minimum swipe distance
     // Check for either carousel or grid wrapper (whichever is active)
-    const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper');
+    const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper, .list-wrapper');
 
     if (diffX < -threshold) {
       // Swipe Left (Next Page)
@@ -527,7 +527,7 @@ export class JellyHALibraryCard extends LitElement {
     // Only swipe/scroll logic if horizontal movement > vertical
     if (Math.abs(diffX) > Math.abs(diffY)) {
       // Elastic Scroll Effect Logic
-      const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper') as HTMLElement;
+      const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper, .list-wrapper') as HTMLElement;
       if (scrollContainer && Math.abs(diffX) > 0) {
         const { scrollLeft, scrollWidth, clientWidth } = scrollContainer;
         const maxScroll = scrollWidth - clientWidth;
@@ -574,7 +574,7 @@ export class JellyHALibraryCard extends LitElement {
 
     // Handle Elastic Reset
     if (this._isOverscrolling) {
-      const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper') as HTMLElement;
+      const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper, .list-wrapper') as HTMLElement;
       if (scrollContainer) {
         scrollContainer.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.8, 0.5, 1)';
         scrollContainer.style.transform = '';
@@ -600,7 +600,7 @@ export class JellyHALibraryCard extends LitElement {
 
     const diffX = e.clientX - this._touchStartX;
     const threshold = 50;
-    const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper');
+    const scrollContainer = this.shadowRoot?.querySelector('.carousel, .grid-wrapper, .list-wrapper');
 
     if (diffX < -threshold) {
       if (scrollContainer) {
