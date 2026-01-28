@@ -961,7 +961,6 @@ const Ae = F`
     overflow-y: auto; /* Enable vertical scrolling */
     height: 100%; /* Fill available space */
     touch-action: pan-y;
-    overscroll-behavior-y: contain; /* Prevent scroll chaining */
   }
 
   /* Grid Wrapper for pagination */

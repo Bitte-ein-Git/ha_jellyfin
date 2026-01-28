@@ -132,6 +132,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: JellyHAConfigEntry) -> 
         # Close API client session
         lib_coordinator = data.library
         if lib_coordinator and lib_coordinator._api:
+            await lib_coordinator._api.logout()
             await lib_coordinator._api.close()
     
     return unload_ok

@@ -41,6 +41,42 @@ class MediaStrategy:
         return info
 
     @staticmethod
+    def discover_chromecast_model(hass: Any, entity_id: str) -> tuple[str, bool]:
+        """Discover Chromecast model and determining legacy status via pychromecast.
+        
+        This method must be run in an executor (it blocks).
+        """
+        model_name = "Unknown"
+        is_legacy = False
+        
+        try:
+            # We are running in an executor (thread), so we can make blocking calls.
+            # Accessing hass.states.get() from a thread is generally safe for reading.
+            entity_state = hass.states.get(entity_id)
+            if entity_state:
+                friendly_name = entity_state.attributes.get("friendly_name")
+                if friendly_name:
+                    import pychromecast
+                    # DIRECT BLOCKING CALL (Since we are already in an executor)
+                    chromecasts, browser = pychromecast.get_listed_chromecasts(
+                        [friendly_name],
+                        discovery_timeout=5.0
+                    )
+                    
+                    if chromecasts:
+                        cast_device = chromecasts[0]
+                        model_name = cast_device.model_name
+                        # Gen 1, 2, 3 are "Chromecast". Ultra/TV are different.
+                        if model_name == "Chromecast":
+                            is_legacy = True
+                    if browser:
+                        browser.stop_discovery()
+        except Exception as e:
+            _LOGGER.warning("Could not detect Chromecast model: %s", e)
+            
+        return model_name, is_legacy
+
+    @staticmethod
     def get_playback_info(
         server_url: str,
         api_key: str,
@@ -76,9 +112,15 @@ class MediaStrategy:
             if is_format_standard and video_height <= 1080:
                 should_direct_play = True
 
+        reason = (
+            f"Codec={video_codec}/{audio_codec}, "
+            f"H={video_height}p, Ch={audio_channels}, "
+            f"Legacy={is_legacy_device}"
+        )
+
         _LOGGER.info(
-            "Media: %s/%s | %sp | %sch | Legacy? %s | DirectPlay? %s", 
-            video_codec, audio_codec, video_height, audio_channels, is_legacy_device, should_direct_play
+            "Media Analysis: %s | DirectPlay Decision: %s", 
+            reason, should_direct_play
         )
 
         media_url = ""
@@ -156,8 +198,8 @@ class MediaStrategy:
 
         # Log
         safe_url = media_url.replace(api_key, "REDACTED")
-        _LOGGER.info("Strategy: %s", log_mode)
-        _LOGGER.info("URL: %s", safe_url)
+        _LOGGER.info("Strategy Selected: %s", log_mode)
+        _LOGGER.debug("Target URL: %s", safe_url)
 
         return {
             "media_url": media_url,

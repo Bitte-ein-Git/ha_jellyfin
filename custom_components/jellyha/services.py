@@ -240,43 +240,20 @@ async def async_register_services(hass: HomeAssistant) -> None:
         image_url = api.get_image_url(item_id, "Primary", max_height=800)
         
         # ------------------------------------------------------------------
-        # 1. CONNECT & DETECT MODEL
+        # 1. CONNECT & DETECT MODEL via Strategy (Async wrapper)
         # ------------------------------------------------------------------
-        model_name = "Unknown"
-        is_legacy_device = False
+        from .media_strategy import MediaStrategy
         
-        try:
-            entity_state = hass.states.get(target_entity_id)
-            if entity_state:
-                friendly_name = entity_state.attributes.get("friendly_name")
-                if friendly_name:
-                    import pychromecast
-                    def _discover_cast():
-                        return pychromecast.get_listed_chromecasts(
-                            [friendly_name],
-                            discovery_timeout=5.0
-                        )
-
-                    chromecasts, browser = await hass.async_add_executor_job(_discover_cast)
-                    if chromecasts:
-                        cast_device = chromecasts[0]
-                        model_name = cast_device.model_name
-                        # Gen 1, 2, 3 are "Chromecast". Ultra/TV are different.
-                        if model_name == "Chromecast":
-                            is_legacy_device = True
-                    if browser:
-                        await hass.async_add_executor_job(browser.stop_discovery)
-        except Exception as e:
-            _LOGGER.warning("Could not detect Chromecast model: %s", e)
+        # Run discovery in executor to avoid blocking
+        model_name, is_legacy_device = await hass.async_add_executor_job(
+            MediaStrategy.discover_chromecast_model, hass, target_entity_id
+        )
 
         _LOGGER.info("Detected Device: %s (Legacy Mode: %s)", model_name, is_legacy_device)
 
         # ------------------------------------------------------------------
-        # ------------------------------------------------------------------
         # 2. ANALYSIS
         # ------------------------------------------------------------------
-        from .media_strategy import MediaStrategy
-        
         media_info = MediaStrategy.analyze_media(item)
         
         # ------------------------------------------------------------------

@@ -41,6 +41,7 @@ from .const import (
     RATING_SOURCE_AUTO,
     RATING_SOURCE_IMDB,
     RATING_SOURCE_TMDB,
+    TICKS_PER_MINUTE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -221,7 +222,7 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         # Runtime in minutes (Jellyfin returns ticks, 1 tick = 100 nanoseconds)
         runtime_ticks = item.get("RunTimeTicks", 0)
-        runtime_minutes = int(runtime_ticks / 600_000_000) if runtime_ticks else None
+        runtime_minutes = int(runtime_ticks / TICKS_PER_MINUTE) if runtime_ticks else None
 
         # Simplified rating (matches our simplified _get_rating)
         rating = item.get("CommunityRating")

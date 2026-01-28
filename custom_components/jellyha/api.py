@@ -368,6 +368,21 @@ class JellyfinApiClient:
             _LOGGER.error("Failed to seek session: %s", err)
             return False
 
+    async def logout(self) -> None:
+        """Logout from Jellyfin server."""
+        try:
+            headers = self._headers
+            headers["X-Emby-Authorization"] = (
+                f'MediaBrowser Client="Home Assistant", '
+                f'Device="HACS Integration", '
+                f'DeviceId="jellyha", '
+                f'Version="1.0.0", '
+                f'Token="{self._api_key}"'
+            )
+            await self._request("POST", "/Sessions/Logout", headers=headers)
+        except Exception as err:
+            _LOGGER.warning("Logout failed: %s", err)
+
     async def close(self) -> None:
         """Close the session."""
         # Do not close the shared session provided by Home Assistant

@@ -71,6 +71,8 @@ class JellyfinWebSocketClient:
         encoded_key = quote(self._api_key)
         url = f"{url}/socket?api_key={encoded_key}&deviceId={encoded_id}"
         
+        retry_delay = 2  # Start with 2 seconds
+        
         while not self._stop_event.is_set():
             try:
                 _LOGGER.debug("Connecting to Jellyfin WebSocket: %s", url)
@@ -100,8 +102,12 @@ class JellyfinWebSocketClient:
                             break
             except Exception as ex:  # pylint: disable=broad-except
                  if not self._stop_event.is_set():
-                    _LOGGER.error("WebSocket connection failed, retrying in 5s: %s", ex)
+                    _LOGGER.error("WebSocket connection failed, retrying in %ds: %s", retry_delay, ex)
             finally:
+                if self._connected:
+                    # Successful connection happened, reset backoff
+                    retry_delay = 2
+                    
                 was_connected = self._connected
                 self._connected = False
                 self._ws = None
@@ -112,7 +118,9 @@ class JellyfinWebSocketClient:
                         self._on_disconnect()
             
             if not self._stop_event.is_set():
-                await asyncio.sleep(5)
+                await asyncio.sleep(retry_delay)
+                # Exponential backoff with jitter could be better, but simple doubling is fine
+                retry_delay = min(retry_delay * 2, 30)
 
     async def _handle_message(self, data: str):
         """Handle incoming WebSocket message."""
