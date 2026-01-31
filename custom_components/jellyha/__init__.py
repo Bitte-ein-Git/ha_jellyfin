@@ -91,8 +91,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: JellyHAConfigEntry) -> b
     # Register static path for assets (phrases, etc)
     # Security: Only expose the dedicated 'static' subdirectory, not the entire integration
     static_path = os.path.join(os.path.dirname(__file__), "static")
+    www_path = os.path.join(os.path.dirname(__file__), "www")
     await hass.http.async_register_static_paths([
-        StaticPathConfig("/jellyha_static", static_path, False)
+        StaticPathConfig("/jellyha_static", static_path, False),
+        StaticPathConfig("/jellyha", www_path, True)
     ])
     
     # Register image proxy view

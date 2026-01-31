@@ -28,9 +28,8 @@ Jellyfin for Home Assistant
 - 🔐 Secure login via Username/Password or API Key
 - 🤖 Advanced automation triggers via custom sensors & services
 - 📂 Full integration with Home Assistant Media Browser
-- 💾 Efficient local storage caching (no database bloat)
+- 💾 Local storage caching
 - ⚡ Instant loading via WebSocket
-- 🖼️ Fully compatible with custom themes
 - 🌍 7 languages: English, German, French, Spanish, Italian, Dutch, Slovenian
 - 🎛️ Graphical card editor (no YAML required)
 
@@ -67,9 +66,8 @@ Please follow the [official HACS installation guide](https://www.hacs.xyz/docs/u
 1. Go to **Settings** → **Dashboards**
 2. Click **⋮** (three-dot menu) → **Resources**
 3. Click **+ Add Resource**
-4. Enter the URL based on your installation method:
-   - **HACS:** `/hacsfiles/jellyha/jellyha-cards.js`
-   - **Manual:** `/local/community/jellyha/jellyha-cards.js` (ensure you copied `dist/jellyha-cards.js` to `config/www/community/jellyha/`)
+4. Enter the URL:
+   - URL: `/jellyha/jellyha-cards.js`
 5. Select Resource type: **JavaScript Module**
 6. Click **Create**
 

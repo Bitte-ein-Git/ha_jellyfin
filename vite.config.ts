@@ -7,6 +7,7 @@ const __dirname = dirname(__filename);
 
 export default defineConfig({
     build: {
+        outDir: 'custom_components/jellyha/www',
         lib: {
             entry: resolve(__dirname, 'src/index.ts'),
             name: 'JellyHA',
