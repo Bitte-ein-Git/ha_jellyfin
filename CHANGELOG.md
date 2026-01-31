@@ -5,19 +5,7 @@ All notable changes to JellyHA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.1] - 2026-01-31
-
-### Fixed
-- **HACS Installation**: Fixed issue where `jellyha-cards.js` was missing from HACS installations by moving build output to `custom_components/jellyha/www`.
-- **Translations**: Updated German, Spanish, French, Italian, and Slovenian translations with missing keys.
-- **Cleanup**: Removed accidental build log files from repository.
-
-### Documentation
-- Added **Troubleshooting** section for frontend loading issues.
-- Added **Automation Examples** (Doorbell pause, Lights control, New Content notification).
-- Updated Dashboard Resource URL instructions to use the new universal `/jellyha/jellyha-cards.js` path.
-
-## [1.0.0] - 2026-01-30
+## [1.0.0] - 2026-01-31
 
 ### Added
 - **Initial release of JellyHA**
@@ -32,4 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Configurable items per page, rows/columns, and alignment
 - **Playback Services**: Play, pause, stop, seek, rewind, and target specific instances via `config_entry_id`
 - **Home Assistant Integration**: Config flow, entity naming managed by HA, "JellyHA" device naming
-- **Localization**: English, German, French, Italian, Spanish, Slovenian
+- **Localization**: English, German, Spanish, French, Italian, Slovenian
+- **Documentation**:
+  - Automation Examples (Doorbell pause, Lights control, New Content notification)
+  - Troubleshooting guide
