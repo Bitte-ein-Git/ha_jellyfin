@@ -1,7 +1,7 @@
 {
     "name": "jellyha",
     "version": "1.0.0",
-    "description": "JellyHA Library - Display media from Jellyfin in Home Assistant",
+    "description": "Jellyfin Custom Integration for Home Assistant",
     "main": "custom_components/jellyha/www/jellyha-cards.js",
     "type": "module",
     "scripts": {
@@ -16,7 +16,7 @@
         "jellyfin",
         "hacs"
     ],
-    "author": "Marko Zupančič",
+    "author": "zupancicmarko",
     "license": "MIT",
     "devDependencies": {
         "@types/node": "^20.10.0",
