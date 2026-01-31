@@ -271,11 +271,11 @@ JellyHA integrates directly with the Home Assistant Media Browser. You can explo
 
 ## Examples
 
-The `jellyha.search` service enables powerful automations by allowing you to find content dynamically.
-
 ### Automation Example: Play Random Unwatched Movie from 2025
 
 This automation finds a highly-rated movie you haven't watched yet and casts it.
+
+The `jellyha.search` service enables powerful automations by allowing you to find content dynamically.
 
 ```yaml
 alias: Play Random Top 2025 Movie
@@ -316,6 +316,82 @@ action:
       - service: notify.persistent_notification
         data:
           message: "No unwatched 2025 movies with rating > 7 found."
+```
+
+### Automation Example: Pause Movie on Doorbell
+
+This automation pauses playback automatically when the doorbell rings.
+
+```yaml
+alias: Pause Movie on Doorbell
+description: "Pauses Jellyfin when the doorbell rings"
+trigger:
+  - trigger: state
+    entity_id: binary_sensor.doorbell # Replace with your actual doorbell entity
+    to: "on"
+condition:
+  # Only run if something is actually playing
+  - condition: state
+    entity_id: sensor.jellyha_now_playing_admin # Replace with your user sensor
+    state: "playing"
+actions:
+  - action: jellyha.session_control
+    data:
+      # Dynamically get the session_id from the sensor attributes
+      session_id: "{{ state_attr('sensor.jellyha_now_playing_admin', 'session_id') }}"
+      command: Pause
+mode: single
+```
+
+### Automation Example: Movie Time Lights
+
+This automation turns off the lights when you start watching something.
+
+```yaml
+alias: Movie Time - Lights Off
+description: "Turn off living room lights when movie starts playing"
+trigger:
+  - trigger: state
+    entity_id: sensor.jellyha_now_playing_admin # Replace with your user sensor
+    to: "playing"
+conditions: []
+actions:
+  - action: light.turn_off
+    target:
+      entity_id: light.living_room
+mode: single
+```
+
+### Automation Example: New Content Notification
+
+Sends a notification to your phone when a new movie is added.
+
+```yaml
+alias: Notify New Movie
+description: "Send notification when a new movie is added"
+trigger:
+  - trigger: state
+    entity_id: sensor.jellyha_unwatched_movies
+conditions:
+  # Check if count increased (new item added)
+  - condition: template
+    value_template: "{{ trigger.to_state.state | int > trigger.from_state.state | int }}"
+actions:
+  # 1. Fetch the single newest movie
+  - action: jellyha.search
+    data:
+      media_type: Movie
+      limit: 1
+    response_variable: new_items
+  
+  # 2. Send notification
+  - action: notify.mobile_app_phone # Replace with your phone's notify service (check Developer Tools)
+    data:
+      title: "New Movie Added"
+      message: "{{ new_items.items[0].name }} is now available!"
+      data:
+        image: "{{ new_items.items[0].image_url }}"
+mode: single
 ```
 
 ### Card Example: Display JellyHA Sensors in a Dashboard Card
@@ -403,6 +479,10 @@ This usually indicates a duplicate command registration. Ensure you are running 
 
 - [Report an issue](https://github.com/zupancicmarko/jellyha/issues)
 - [Home Assistant Community](https://community.home-assistant.io/)
+
+## Acknowledgments
+
+This project was developed with the assistance of AI.
 
 ## License
 
