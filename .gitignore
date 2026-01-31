@@ -43,3 +43,6 @@ temp/
 # Build logs
 build_log.txt
 build_log_utf8.txt
+
+# Agent
+.agent/
