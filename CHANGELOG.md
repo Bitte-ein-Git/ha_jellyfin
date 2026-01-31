@@ -17,10 +17,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Swipe to Close**: Mobile-friendly swipe-down gesture for "More Info" modal
   - **Double Tap Action**: Configurable double-tap action on items
   - **Pagination Dots**: Option to show/hide dots
+  - **Search Bar**: Built-in search bar with Title and Genre filtering
   - Configurable items per page, rows/columns, and alignment
-- **Playback Services**: Play, pause, stop, seek, rewind, and target specific instances via `config_entry_id`
-- **Home Assistant Integration**: Config flow, entity naming managed by HA, "JellyHA" device naming
+- **JellyHA Now Playing Card**
+  - Now Playing banner with media controls
+  - Configurable actions for play, pause, stop, seek, rewind
+- **JellyHA Sensor**: Sensors for library items
+- **Playback Services**: Play, pause, stop, seek, rewind
+- **More Info Modal**: Enhanced with swipe to close gesture
+- **Cast Support**: Chromecast Gen 1 support
+- **Authentication**: Username/Password and API Key support
+- **Configuration Flow**: Easy setup via HACS or manual installation
+- **Entity Naming**: Managed by Home Assistant
+- **Device Naming**: "JellyHA" device naming
+- **Automation Examples**: Doorbell pause, Lights control, New Content notification
+- **Troubleshooting Guide**: Basic troubleshooting steps
 - **Localization**: English, German, Spanish, French, Italian, Slovenian
-- **Documentation**:
-  - Automation Examples (Doorbell pause, Lights control, New Content notification)
-  - Troubleshooting guide
+- **Documentation**: Comprehensive documentation
