@@ -224,7 +224,7 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         runtime_ticks = item.get("RunTimeTicks", 0)
         runtime_minutes = int(runtime_ticks / TICKS_PER_MINUTE) if runtime_ticks else None
 
-        # Simplified rating (matches our simplified _get_rating)
+        # Simplified rating
         rating = item.get("CommunityRating")
 
         return {
@@ -253,16 +253,7 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "index_number": item.get("IndexNumber"),
         }
 
-    def _get_rating(
-        self,
-        item_type: str,
-        provider_ids: dict[str, Any],
-        community_rating: float | None,
-    ) -> float | None:
-        """Get the appropriate rating based on item type (IMDB for movies, TMDB for TV)."""
-        # Currently we failback to community rating for all types as we don't fetch external ratings directly.
-        # Future enhancement: Map provider IDs to external ratings if available in extended metadata.
-        return community_rating
+
 
 
 class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):

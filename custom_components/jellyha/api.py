@@ -188,7 +188,7 @@ class JellyfinApiClient:
             "SortOrder": "Descending",
             "Recursive": "true",
             "IncludeItemTypes": ",".join(item_types),
-            "Fields": "PrimaryImageAspectRatio,ProviderIds,Genres,RunTimeTicks,DateCreated,CommunityRating,Overview,MediaStreams,UserData,RemoteTrailers",
+            "Fields": "Genres,RunTimeTicks,DateCreated,CommunityRating,Overview,UserData,RemoteTrailers",
         }
 
         if limit > 0:
@@ -254,7 +254,7 @@ class JellyfinApiClient:
             "SortBy": "DatePlayed",
             "SortOrder": "Descending",
             "Dependencies": "true",
-            "Fields": "PrimaryImageAspectRatio,ProviderIds,Genres,RunTimeTicks,DateCreated,CommunityRating,Overview,MediaStreams,UserData,RemoteTrailers,SeriesInfo,ParentId",
+            "Fields": "Genres,RunTimeTicks,DateCreated,CommunityRating,Overview,UserData,RemoteTrailers,SeriesInfo,ParentId",
         }
         if limit:
             params["Limit"] = limit
