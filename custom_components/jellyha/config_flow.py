@@ -36,6 +36,14 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+def validate_url(url: str) -> str:
+    """Validate and fix the server URL."""
+    url = url.strip()
+    if not url.startswith(("http://", "https://")):
+        return f"http://{url}".rstrip("/")
+    return url.rstrip("/")
+
+
 class JellyHAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for JellyHA."""
 
@@ -68,7 +76,7 @@ class JellyHAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            self._server_url = user_input[CONF_SERVER_URL].rstrip("/")
+            self._server_url = validate_url(user_input[CONF_SERVER_URL])
             auth_method = user_input[CONF_AUTH_METHOD]
 
             if auth_method == "API Key":
@@ -103,7 +111,7 @@ class JellyHAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="single_instance_allowed")
 
         if user_input is not None:
-            self._server_url = user_input[CONF_SERVER_URL].rstrip("/")
+            self._server_url = validate_url(user_input[CONF_SERVER_URL])
             auth_method = user_input[CONF_AUTH_METHOD]
 
             if auth_method == "API Key":
@@ -380,7 +388,7 @@ class JellyHAOptionsFlowHandler(config_entries.OptionsFlow):
             
             # Update Server URL if changed
             if CONF_SERVER_URL in user_input:
-                self._server_url = user_input[CONF_SERVER_URL]
+                self._server_url = validate_url(user_input[CONF_SERVER_URL])
                 new_data[CONF_SERVER_URL] = self._server_url
             
             if CONF_REFRESH_INTERVAL in user_input:

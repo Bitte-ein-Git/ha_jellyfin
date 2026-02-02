@@ -11,6 +11,7 @@ Jellyfin for Home Assistant
   <img src="./docs/JellyHA-Library-List.png" width="45%" alt="List View" />
   <img src="./docs/JellyHA-Library-Next-Up.png" width="45%" alt="Next Up View" />
   <img src="./docs/JellyHA-Library-More-Information.png" width="45%" alt="More Information" />
+  <img src="./docs/JellyHA-Cards.png" width="45%" alt="Add to dashboard" />
 </div>
 
 ## Features
@@ -110,6 +111,8 @@ To get your Jellyfin API key:
 
 The **JellyHA Library** provides a beautiful way to browse and play your media collection directly in Home Assistant.
 
+> **ℹ️ Info:** Use **Add to dashboard** and search for JellyHA Card. YAML below is just informational.
+
 ```yaml
 type: custom:jellyha-library-card
 entity: sensor.jellyha_library
@@ -162,9 +165,11 @@ max_pages: 5
 
 The **JellyHA Now Playing Card** shows a rich media control interface for the currently playing item.
 
+> **ℹ️ Info:** Use **Add to dashboard** and search for JellyHA Card. YAML below is just informational.
+
 ```yaml
 type: custom:jellyha-now-playing-card
-entity: sensor.jellyha_now_playing_[username]
+entity: sensor.jellyha_now_playing_admin # Replace with your user sensor
 title: Now Playing
 show_background: true
 ```
@@ -385,10 +390,10 @@ actions:
   # 2. Send notification
   - action: notify.mobile_app_phone # Replace with your phone's notify service (check Developer Tools)
     data:
-      title: "New Movie Added"
-      message: "{{ new_items.items[0].name }} is now available!"
+      title: New Movie Added
+      message: "{{ new_items['items'][0]['name'] }} ({{ new_items['items'][0]['year'] }}) - Rating: {{ new_items['items'][0]['rating'] }}/10 is now available!"
       data:
-        image: "{{ new_items.items[0].image_url }}"
+        image: "{{ new_items['items'][0]['image_url'] }}"
 mode: single
 ```
 

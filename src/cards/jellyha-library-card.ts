@@ -824,7 +824,7 @@ export class JellyHALibraryCard extends LitElement {
       columns: 12,
       rows: 6,
       min_columns: 12,
-      min_rows: 5,
+      min_rows: 4,
     };
   }
 
