@@ -465,22 +465,11 @@ class JellyHAUserSensor(CoordinatorEntity[JellyHASessionCoordinator], SensorEnti
             if duration_ticks and duration_ticks > 0:
                 attributes["progress_percent"] = int((position_ticks / duration_ticks) * 100)
 
-            # Image Proxy URL
-            if item_id:
-                # Use the HA Proxy view instead of direct Jellyfin URL
-                # /api/jellyha/image/{entry_id}/{item_id}/{image_type}
-                attributes["image_url"] = (
-                    f"/api/jellyha/image/{self._entry.entry_id}/{item_id}/Primary"
-                    f"?tag={item.get('ImageTags', {}).get('Primary', '')}"
-                )
+            # Image Proxy URL (Signed URL from coordinator)
+            attributes["image_url"] = session.get("jellyha_poster_url")
             
             # Backdrop Logic
-            backdrop_tags = item.get("BackdropImageTags", [])
-            if backdrop_tags and item_id:
-                attributes["backdrop_url"] = (
-                    f"/api/jellyha/image/{self._entry.entry_id}/{item_id}/Backdrop"
-                    f"?tag={backdrop_tags[0]}"
-                )
+            attributes["backdrop_url"] = session.get("jellyha_backdrop_url")
 
         return attributes
 

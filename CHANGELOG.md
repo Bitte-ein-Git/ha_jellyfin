@@ -9,9 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Server URL validation in configuration flow to ensure correct format (automatically adds `http://` scheme if missing).
+- **Secure Image Proxy**: All image URLs are now signed with 24-hour expiration for security.
+- **Image URL Caching**: Signed URLs are cached by `(item_id, image_type, tag)` to enable proper browser caching.
 
 ### Changed
 - Changed default minimum rows for Library Card from 5 to 4 for better compactness.
+- **Optimized Image Widths**: Reduced bandwidth usage with appropriate sizing
+- Image format defaults to WebP with 80% quality in the backend.
 
 ## [1.0.2] - 2026-02-01
 

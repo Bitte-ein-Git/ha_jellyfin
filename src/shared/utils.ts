@@ -32,3 +32,13 @@ export function formatRuntime(minutes: number): string {
     const mins = minutes % 60;
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
+
+/**
+ * Add width param to a signed URL.
+ * Appended at the end (after authSig) - not part of the signature.
+ * Format defaults to webp in the backend.
+ */
+export function addImageParams(url: string, width: number): string {
+    if (!url) return url;
+    return `${url}&width=${width}`;
+}

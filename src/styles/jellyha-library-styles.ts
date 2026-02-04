@@ -758,7 +758,7 @@ export const cardStyles = css`
     position: absolute;
     top: 6px;
     right: 6px;
-    background: var(--jf-primary);
+    background: #009ac7;
     color: #fff;
     padding: 2px 8px 1px 8px;
     border-radius: 4px;
@@ -801,7 +801,7 @@ export const cardStyles = css`
   .status-badge.unplayed {
     padding: 2px 8px 1px 8px;
     border-radius: 4px;
-    background: var(--jf-primary);
+    background: #009ac7;
     color: #fff;
     font-size: 0.8rem;
     font-weight: 800;

@@ -1,7 +1,7 @@
 import { LitElement, html, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, MediaItem, JellyHALibraryCardConfig } from '../shared/types';
-import { isNewItem, formatDate, formatRuntime } from '../shared/utils';
+import { isNewItem, formatDate, formatRuntime, addImageParams } from '../shared/utils';
 import { localize } from '../shared/localize';
 import { cardStyles } from '../styles/jellyha-library-styles';
 
@@ -64,7 +64,7 @@ export class JellyHAMediaItem extends LitElement {
             <div class="poster-inner">
               <img
                 class="poster"
-                src="${item.poster_url}&width=300&format=webp"
+                src="${addImageParams(item.poster_url, 160)}"
                 alt="${item.name}"
                 width="80"
                 height="120"
@@ -183,7 +183,7 @@ export class JellyHAMediaItem extends LitElement {
           <div class="poster-inner">
             <img
               class="poster"
-              src="${item.poster_url}&width=300&format=webp"
+              src="${addImageParams(item.poster_url, 300)}"
               alt="${item.name}"
               width="140"
               height="210"

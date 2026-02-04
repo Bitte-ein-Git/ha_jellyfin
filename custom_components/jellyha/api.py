@@ -47,6 +47,16 @@ class JellyfinApiClient:
         self._user_id: str | None = None
 
     @property
+    def server_url(self) -> str:
+        """Get the server URL."""
+        return self._server_url
+
+    @property
+    def session(self) -> aiohttp.ClientSession:
+        """Get the client session."""
+        return self._session
+
+    @property
     def _headers(self) -> dict[str, str]:
         """Get authentication headers."""
         headers = {

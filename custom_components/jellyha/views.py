@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 import aiohttp
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 class JellyHAImageView(HomeAssistantView):
     """View to proxy Jellyfin images."""
@@ -35,6 +38,26 @@ class JellyHAImageView(HomeAssistantView):
         if not client:
              return web.Response(status=404, text="API not available")
 
+        # Check authentication:
+        # 1. Standard HA user session (logged in via UI)
+        # 2. Valid signed path (HA sets hass_refresh_token_id when authSig is valid)
+        # If neither, reject the request.
+        is_authenticated = request.get("hass_user") is not None
+        has_valid_signature = request.get("hass_refresh_token_id") is not None
+        
+        _LOGGER.debug(
+            "Image request: entry=%s, item=%s, type=%s, user=%s, refresh_token=%s, query=%s",
+            entry_id, item_id, image_type,
+            request.get("hass_user"),
+            request.get("hass_refresh_token_id"),
+            dict(request.query)
+        )
+        
+        if not is_authenticated and not has_valid_signature:
+            _LOGGER.warning("Unauthorized image request - no user session or valid signature")
+            return web.Response(status=401, text="Unauthorized")
+
+
         width = request.query.get("width")
         height = request.query.get("height")
         # Default to WebP if format not specified (Standard 2026 practice)
@@ -58,10 +81,10 @@ class JellyHAImageView(HomeAssistantView):
         # Fix: Ensure we correctly map 'Primary' to actual endpoint logic if needed
         # But for now, passing to Jellyfin as-is.
         
-        url = f"{client._server_url}/Items/{item_id}/Images/{image_type}"
+        url = f"{client.server_url}/Items/{item_id}/Images/{image_type}"
         
         try:
-            session = client._session
+            session = client.session
             async with session.get(
                 url, 
                 headers=client._headers, 
@@ -75,8 +98,6 @@ class JellyHAImageView(HomeAssistantView):
                 
                 # Correct Content-Type based on format
                 content_type = resp.headers.get("Content-Type", "image/jpeg")
-                if format_type == "webp":
-                    content_type = "image/webp"
                     
                 response.headers["Content-Type"] = content_type
                 if "Cache-Control" in resp.headers:

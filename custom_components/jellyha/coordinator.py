@@ -14,6 +14,8 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
+from homeassistant.components.http.auth import async_sign_path
+import asyncio
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.issue_registry import async_create_issue, IssueSeverity
@@ -67,6 +69,8 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.last_refresh_duration: float | None = None  # Duration of last refresh in seconds
         self._previous_item_ids: set[str] = set()
         self._previous_item_hash: str = ""
+        # Cache signed URLs by (item_id, image_type, tag) to avoid regenerating
+        self._url_cache: dict[tuple[str, str, str], str] = {}
 
         refresh_interval = entry.options.get(
             CONF_REFRESH_INTERVAL,
@@ -117,14 +121,14 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 library_ids=libraries if libraries else None,
             )
 
-            items = [self._transform_item(item) for item in raw_items]
+            items = await asyncio.gather(*(self._async_transform_item(item) for item in raw_items))
 
             # Fetch Next Up items (limit 20)
             next_up_limit = 20
             raw_next_up = await self._api.get_next_up_items(user_id=user_id, limit=next_up_limit)
             next_up_items = []
             if raw_next_up:
-                next_up_items = [self._transform_item(item) for item in raw_next_up]
+                next_up_items = await asyncio.gather(*(self._async_transform_item(item) for item in raw_next_up))
                 # Enhance Next Up items with season/episode info specifically
                 for i, raw in zip(next_up_items, raw_next_up):
                     i["season"] = raw.get("ParentIndexNumber")
@@ -215,7 +219,7 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         return hashlib.sha256("|".join(hash_data).encode()).hexdigest()
 
-    def _transform_item(self, item: dict[str, Any]) -> dict[str, Any]:
+    async def _async_transform_item(self, item: dict[str, Any]) -> dict[str, Any]:
         """Transform raw Jellyfin item to our schema."""
         item_id = item.get("Id", "")
         item_type = item.get("Type", "")
@@ -227,6 +231,30 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Simplified rating
         rating = item.get("CommunityRating")
 
+        # Generate signed URLs with caching (only regenerate if tag changes)
+        expiration = timedelta(hours=24)
+        
+        poster_tag = item.get('ImageTags', {}).get('Primary', '')
+        poster_cache_key = (item_id, "Primary", poster_tag)
+        if poster_cache_key in self._url_cache:
+            poster_url = self._url_cache[poster_cache_key]
+        else:
+            poster_path = f"/api/jellyha/image/{self.entry.entry_id}/{item_id}/Primary?tag={poster_tag}"
+            poster_url = async_sign_path(self.hass, poster_path, expiration)
+            self._url_cache[poster_cache_key] = poster_url
+
+        backdrop_url = None
+        backdrop_tags = item.get('BackdropImageTags', [])
+        if backdrop_tags:
+            backdrop_tag = backdrop_tags[0]
+            backdrop_cache_key = (item_id, "Backdrop", backdrop_tag)
+            if backdrop_cache_key in self._url_cache:
+                backdrop_url = self._url_cache[backdrop_cache_key]
+            else:
+                backdrop_path = f"/api/jellyha/image/{self.entry.entry_id}/{item_id}/Backdrop?tag={backdrop_tag}"
+                backdrop_url = async_sign_path(self.hass, backdrop_path, expiration)
+                self._url_cache[backdrop_cache_key] = backdrop_url
+
         return {
             "id": item_id,
             "name": item.get("Name", ""),
@@ -237,8 +265,8 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "rating": rating,
             # Removed separate provider ratings to save memory
             "description": item.get("Overview", ""),
-            "poster_url": f"/api/jellyha/image/{self.entry.entry_id}/{item_id}/Primary?tag={item.get('ImageTags', {}).get('Primary', '')}",
-            #"backdrop_url": f"/api/jellyha/image/{self.entry.entry_id}/{item_id}/Backdrop?tag={item.get('BackdropImageTags', [''])[0]}" if item.get('BackdropImageTags') else None,
+            "poster_url": poster_url,
+            #"backdrop_url": backdrop_url, # Now available if uncommented, but keeping optimizing
             "date_added": item.get("DateCreated"),
             "jellyfin_url": self._api.get_jellyfin_url(item_id),
             "is_played": item.get("UserData", {}).get("Played", False),
@@ -280,6 +308,8 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         self.users: dict[str, str] = {}  # Map user_id to username
         self._previous_sessions: dict[str, dict[str, Any]] = {}  # Map session_id to session data
         self._device_id: str | None = None
+        # Cache signed URLs by (item_id, image_type, tag) to avoid regenerating
+        self._url_cache: dict[tuple[str, str, str], str] = {}
 
         if self._ws_client:
             self._ws_client.set_on_session_update(self._handle_ws_session_update)
@@ -302,15 +332,52 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
 
         try:
             sessions = await self._api.get_sessions()
+            self._enrich_sessions(sessions)
+            
             # Fire events even during polling to ensure automation triggers work
             self._fire_session_events(sessions)
             return sessions
         except JellyfinApiError as err:
             raise UpdateFailed(f"Error fetching sessions: {err}") from err
 
+    def _enrich_sessions(self, sessions: list[dict[str, Any]]) -> None:
+        """Add signed image URLs to sessions with caching."""
+        expiration = timedelta(hours=24)
+        
+        for s in sessions:
+            if "NowPlayingItem" in s:
+                item = s["NowPlayingItem"]
+                item_id = item.get("Id")
+                
+                if item_id:
+                    # Cache poster URL
+                    poster_tag = item.get('ImageTags', {}).get('Primary', '')
+                    poster_cache_key = (item_id, "Primary", poster_tag)
+                    if poster_cache_key in self._url_cache:
+                        s["jellyha_poster_url"] = self._url_cache[poster_cache_key]
+                    else:
+                        poster_path = f"/api/jellyha/image/{self.entry.entry_id}/{item_id}/Primary?tag={poster_tag}"
+                        s["jellyha_poster_url"] = async_sign_path(self.hass, poster_path, expiration)
+                        self._url_cache[poster_cache_key] = s["jellyha_poster_url"]
+                    
+                    # Cache backdrop URL
+                    backdrop_tags = item.get("BackdropImageTags", [])
+                    if backdrop_tags:
+                        backdrop_tag = backdrop_tags[0]
+                        backdrop_cache_key = (item_id, "Backdrop", backdrop_tag)
+                        if backdrop_cache_key in self._url_cache:
+                            s["jellyha_backdrop_url"] = self._url_cache[backdrop_cache_key]
+                        else:
+                            backdrop_path = f"/api/jellyha/image/{self.entry.entry_id}/{item_id}/Backdrop?tag={backdrop_tag}"
+                            s["jellyha_backdrop_url"] = async_sign_path(self.hass, backdrop_path, expiration)
+                            self._url_cache[backdrop_cache_key] = s["jellyha_backdrop_url"]
+
     async def _handle_ws_session_update(self, sessions: list[dict[str, Any]]) -> None:
         """Handle session updates from WebSocket."""
         _LOGGER.debug("Coordinator received %d sessions from WS", len(sessions))
+        
+        # Enrich with signed URLs (same as polling path)
+        self._enrich_sessions(sessions)
         
         # Fire events for device triggers
         self._fire_session_events(sessions)

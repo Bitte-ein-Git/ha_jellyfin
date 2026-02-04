@@ -6,7 +6,7 @@ import {
     NowPlayingSensorData
 } from '../shared/types';
 import { localize } from '../shared/localize';
-import { formatRuntime } from '../shared/utils';
+import { formatRuntime, addImageParams } from '../shared/utils';
 
 // Import editor for side effects
 import '../editors/jellyha-now-playing-editor';
@@ -29,6 +29,10 @@ export class JellyHANowPlayingCard extends LitElement {
     @state() private _rewindActive: boolean = false;
     @state() private _overflowState: number = 0; // 0=All, 1=Hide Genres, 2=Hide Meta
     private _resizeObserver?: ResizeObserver;
+
+    // Cache backdrop URL to prevent flicker on every update
+    private _cachedBackdropUrl: string | undefined;
+    private _cachedItemId: string | undefined;
 
     public setConfig(config: JellyHANowPlayingCardConfig): void {
         this._config = {
@@ -110,9 +114,15 @@ export class JellyHANowPlayingCard extends LitElement {
         const progressPercent = attributes.progress_percent || 0;
         const imageUrl = attributes.image_url;
 
-        const backdropUrl = (attributes.backdrop_url || attributes.image_url)
-            ? `${attributes.backdrop_url || attributes.image_url}&width=1280&format=webp`
-            : undefined;
+        // Cache backdrop URL to prevent flicker - only update when item changes
+        const currentItemId = attributes.item_id;
+        if (currentItemId !== this._cachedItemId) {
+            this._cachedItemId = currentItemId;
+            const rawBackdropUrl = attributes.backdrop_url || attributes.image_url;
+            this._cachedBackdropUrl = rawBackdropUrl ? addImageParams(rawBackdropUrl, 640) : undefined;
+        }
+
+        const backdropUrl = this._cachedBackdropUrl;
         const showBackground = this._config.show_background && backdropUrl;
         const isPaused = attributes.is_paused;
 
@@ -131,7 +141,7 @@ export class JellyHANowPlayingCard extends LitElement {
                     <div class="main-container">
                         ${imageUrl ? html`
                             <div class="poster-container" @click=${this._handlePosterRewind}>
-                                <img src="${imageUrl}&width=400&format=webp" alt="${attributes.title}" loading="eager" fetchpriority="high" />
+                                <img src="${addImageParams(imageUrl, 160)}" alt="${attributes.title}" loading="eager" fetchpriority="high" />
                                 ${this._rewindActive ? html`
                                     <div class="rewind-overlay">
                                         <span>${localize(this.hass.locale?.language || this.hass.language, 'rewinding')}</span>
