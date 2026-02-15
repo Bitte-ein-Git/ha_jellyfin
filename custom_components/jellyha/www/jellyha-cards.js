@@ -1947,6 +1947,7 @@ const je = F`
     "editor.show_genres": "Show Genre",
     "editor.show_client": "Show Jellyfin Client",
     "editor.show_background": "Show Background",
+    "editor.use_series_image": "Use Series Cover Image",
     "editor.show_media_type_badge": "Show Media Type Badge",
     "editor.show_watched_status": "Show Watched Status",
     "editor.show_date_added": "Show Date Added",
@@ -2026,6 +2027,7 @@ const je = F`
     "editor.show_genres": "Genre anzeigen",
     "editor.show_client": "Jellyfin-Client anzeigen",
     "editor.show_background": "Hintergrund anzeigen",
+    "editor.use_series_image": "Serien-Cover verwenden",
     "editor.show_media_type_badge": "Medientyp-Abzeichen anzeigen",
     "editor.show_watched_status": "Gesehen-Status anzeigen",
     "editor.show_date_added": "Hinzugefügt am anzeigen",
@@ -2105,6 +2107,7 @@ const je = F`
     "editor.show_genres": "Afficher le genre",
     "editor.show_client": "Afficher le client Jellyfin",
     "editor.show_background": "Afficher l'arrière-plan",
+    "editor.use_series_image": "Utiliser l'image de couverture de la série",
     "editor.show_media_type_badge": "Afficher le badge de type de média",
     "editor.show_watched_status": "Afficher le statut de visionnage",
     "editor.show_date_added": "Afficher la date d'ajout",
@@ -2184,6 +2187,7 @@ const je = F`
     "editor.show_genres": "Mostrar género",
     "editor.show_client": "Mostrar cliente Jellyfin",
     "editor.show_background": "Mostrar fondo",
+    "editor.use_series_image": "Usar imagen de portada de serie",
     "editor.show_media_type_badge": "Mostrar insignia de tipo de medio",
     "editor.show_watched_status": "Mostrar estado de visualización",
     "editor.show_date_added": "Mostrar fecha de adición",
@@ -2263,6 +2267,7 @@ const je = F`
     "editor.show_genres": "Mostra genere",
     "editor.show_client": "Mostra client Jellyfin",
     "editor.show_background": "Mostra sfondo",
+    "editor.use_series_image": "Usa immagine copertina serie",
     "editor.show_media_type_badge": "Mostra badge tipo media",
     "editor.show_watched_status": "Mostra stato guardato",
     "editor.show_date_added": "Mostra data aggiunta",
@@ -2342,6 +2347,7 @@ const je = F`
     "editor.show_genres": "Genre tonen",
     "editor.show_client": "Jellyfin-client tonen",
     "editor.show_background": "Achtergrond tonen",
+    "editor.use_series_image": "Gebruik serie-omslagafbeelding",
     "editor.show_media_type_badge": "Mediatype-badge tonen",
     "editor.show_watched_status": "Bekeken-status tonen",
     "editor.show_date_added": "Datum toegevoegd tonen",
@@ -2421,6 +2427,7 @@ const je = F`
     "editor.show_genres": "Prikaži žanr",
     "editor.show_client": "Prikaži Jellyfin odjemalec",
     "editor.show_background": "Prikaži ozadje",
+    "editor.use_series_image": "Uporabi sliko naslovnice serije",
     "editor.show_media_type_badge": "Prikaži značko tipa medija",
     "editor.show_watched_status": "Prikaži status ogleda",
     "editor.show_date_added": "Prikaži datum dodajanja",
@@ -3780,6 +3787,16 @@ let H = class extends S {
       </div>
     </div>
 
+    ${this._config.media_type === "next_up" ? n`
+          <div class=\"checkbox-row\">
+            <ha-switch
+              .checked=${this._config.use_series_image === !0}
+              @change=${this._useSeriesImageChanged}
+            ></ha-switch>
+            <span>${l(a, "editor.use_series_image")}</span>
+          </div>
+        ` : ""}
+
 
   </div>
 `;
@@ -3910,6 +3927,10 @@ let H = class extends S {
     const e = t.target;
     this._updateConfig("sort_option", e.value);
   }
+  _useSeriesImageChanged(t) {
+    const e = t.target;
+    this._updateConfig("use_series_image", e.checked);
+  }
   _updateConfig(t, e) {
     if (!this._config)
       return;
@@ -3987,7 +4008,10 @@ let w = class extends S {
             <div class="poster-inner">
               <img
                 class="poster"
-                src="${Z(t.poster_url, 160)}"
+                src="${Z(
+      this.config.use_series_image && t.series_poster_url ? t.series_poster_url : t.poster_url,
+      160
+    )}"
                 alt="${t.name}"
                 width="80"
                 height="120"
@@ -4068,7 +4092,10 @@ let w = class extends S {
           <div class="poster-inner">
             <img
               class="poster"
-              src="${Z(t.poster_url, 300)}"
+              src="${Z(
+      this.config.use_series_image && t.series_poster_url ? t.series_poster_url : t.poster_url,
+      300
+    )}"
               alt="${t.name}"
               width="140"
               height="210"
@@ -5325,6 +5352,14 @@ let R = class extends S {
           ></ha-switch>
           <span>${l(e, "editor.show_background")}</span>
         </div>
+
+        <div class="checkbox-row">
+          <ha-switch
+            .checked=${this._config.use_series_image === !0}
+            @change=${this._useSeriesImageChanged}
+          ></ha-switch>
+          <span>${l(e, "editor.use_series_image")}</span>
+        </div>
       </div>
     `;
   }
@@ -5367,6 +5402,10 @@ let R = class extends S {
   _showBackgroundChanged(t) {
     const e = t.target;
     this._updateConfig("show_background", e.checked);
+  }
+  _useSeriesImageChanged(t) {
+    const e = t.target;
+    this._updateConfig("use_series_image", e.checked);
   }
   _updateConfig(t, e) {
     if (!this._config)
@@ -5427,6 +5466,7 @@ let T = class extends S {
       show_genres: !0,
       show_ratings: !0,
       show_runtime: !0,
+      use_series_image: !1,
       ...t
     };
   }
@@ -5443,7 +5483,8 @@ let T = class extends S {
       show_background: !0,
       show_genres: !0,
       show_ratings: !0,
-      show_runtime: !0
+      show_runtime: !0,
+      use_series_image: !1
     };
   }
   getCardSize() {
@@ -5476,7 +5517,7 @@ let T = class extends S {
     const i = e.attributes;
     if (!!!i.item_id)
       return this._renderEmpty();
-    const o = i.progress_percent || 0, s = i.image_url, r = i.item_id;
+    const o = i.progress_percent || 0, s = this._config.use_series_image && i.series_image_url ? i.series_image_url : i.image_url, r = i.item_id;
     if (r !== this._cachedItemId) {
       this._cachedItemId = r;
       const g = i.backdrop_url || i.image_url;

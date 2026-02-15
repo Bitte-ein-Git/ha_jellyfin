@@ -425,6 +425,18 @@ export class JellyHALibraryEditor extends LitElement {
       </div>
     </div>
 
+    ${this._config.media_type === 'next_up'
+        ? html`
+          <div class=\"checkbox-row\">
+            <ha-switch
+              .checked=${this._config.use_series_image === true}
+              @change=${this._useSeriesImageChanged}
+            ></ha-switch>
+            <span>${localize(lang, 'editor.use_series_image')}</span>
+          </div>
+        `
+        : ''}
+
 
   </div>
 `;
@@ -602,6 +614,11 @@ export class JellyHALibraryEditor extends LitElement {
   private _sortOptionChanged(e: Event): void {
     const target = e.target as HTMLSelectElement;
     this._updateConfig('sort_option', target.value);
+  }
+
+  private _useSeriesImageChanged(e: Event): void {
+    const target = e.target as HTMLInputElement;
+    this._updateConfig('use_series_image', target.checked);
   }
 
   private _updateConfig(key: string, value: unknown): void {

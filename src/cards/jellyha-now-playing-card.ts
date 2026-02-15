@@ -44,6 +44,7 @@ export class JellyHANowPlayingCard extends LitElement {
             show_genres: true,
             show_ratings: true,
             show_runtime: true,
+            use_series_image: false,
             ...config,
         };
     }
@@ -65,6 +66,7 @@ export class JellyHANowPlayingCard extends LitElement {
             show_genres: true,
             show_ratings: true,
             show_runtime: true,
+            use_series_image: false,
         };
     }
 
@@ -112,7 +114,11 @@ export class JellyHANowPlayingCard extends LitElement {
         }
 
         const progressPercent = attributes.progress_percent || 0;
-        const imageUrl = attributes.image_url;
+
+        // Use series image if configured and available, otherwise use episode/movie image
+        const imageUrl = this._config.use_series_image && attributes.series_image_url
+            ? attributes.series_image_url
+            : attributes.image_url;
 
         // Cache backdrop URL to prevent flicker - only update when item changes
         const currentItemId = attributes.item_id;

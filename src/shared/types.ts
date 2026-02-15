@@ -50,6 +50,7 @@ export interface MediaItem {
     rating_tmdb?: string;
     description?: string;
     poster_url: string;
+    series_poster_url?: string;
     backdrop_url: string;
     date_added: string;
     jellyfin_url: string;
@@ -104,6 +105,7 @@ export interface JellyHALibraryCardConfig extends LovelaceCardConfig {
     filter_favorites?: boolean;
     status_filter?: 'all' | 'watched' | 'unwatched';
     filter_newly_added?: boolean;
+    use_series_image?: boolean;
     show_search?: boolean;
     sort_option?: 'date_added_asc' | 'date_added_desc' | 'title_asc' | 'title_desc' | 'year_asc' | 'year_desc' | 'last_played_asc' | 'last_played_desc';
 }
@@ -130,6 +132,7 @@ export interface NowPlayingSensorData {
     progress_percent?: number;
     position_ticks?: number;
     image_url?: string;
+    series_image_url?: string;
     media_type?: string;
     icon?: string;
     is_paused?: boolean;
@@ -152,6 +155,7 @@ export interface JellyHANowPlayingCardConfig extends LovelaceCardConfig {
     show_year?: boolean;
     show_client?: boolean;
     show_background?: boolean;
+    use_series_image?: boolean;
     show_description?: boolean;
     theme?: 'auto' | 'light' | 'dark';
 }

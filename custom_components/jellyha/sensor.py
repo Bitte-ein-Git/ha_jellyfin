@@ -449,6 +449,7 @@ class JellyHAUserSensor(CoordinatorEntity[JellyHASessionCoordinator], SensorEnti
                 attributes["series_title"] = item.get("SeriesName")
                 attributes["season"] = item.get("ParentIndexNumber")
                 attributes["episode"] = item.get("IndexNumber")
+                attributes["series_image_url"] = session.get("jellyha_series_poster_url")
             else:
                 # Movie, etc.
                 attributes["title"] = item.get("Name")

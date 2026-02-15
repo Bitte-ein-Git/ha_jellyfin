@@ -290,6 +290,21 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 backdrop_url = async_sign_path(self.hass, backdrop_path, expiration)
                 self._url_cache[backdrop_cache_key] = (backdrop_url, now)
 
+        # Cache series poster URL for episodes
+        series_poster_url = None
+        if item_type == "Episode":
+            series_id = item.get("SeriesId")
+            series_tag = item.get("SeriesPrimaryImageTag")
+            if series_id and series_tag:
+                series_cache_key = (series_id, "Primary", series_tag)
+                cached = self._url_cache.get(series_cache_key)
+                if cached and (now - cached[1]) < _URL_CACHE_TTL:
+                    series_poster_url = cached[0]
+                else:
+                    series_path = f"/api/jellyha/image/{self.entry.entry_id}/{series_id}/Primary?tag={series_tag}"
+                    series_poster_url = async_sign_path(self.hass, series_path, expiration)
+                    self._url_cache[series_cache_key] = (series_poster_url, now)
+
         return {
             "id": item_id,
             "name": item.get("Name", ""),
@@ -301,6 +316,7 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Removed separate provider ratings to save memory
             "description": item.get("Overview", ""),
             "poster_url": poster_url,
+            "series_poster_url": series_poster_url,
             #"backdrop_url": backdrop_url, # Now available if uncommented, but keeping optimizing
             "date_added": item.get("DateCreated"),
             "jellyfin_url": self._api.get_jellyfin_url(item_id),
@@ -350,6 +366,11 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             self._ws_client.set_on_session_update(self._handle_ws_session_update)
             self._ws_client.set_on_connect(self._handle_ws_connect)
             self._ws_client.set_on_disconnect(self._handle_ws_disconnect)
+
+    @property
+    def api(self) -> JellyfinApiClient:
+        """Return the API client for session commands."""
+        return self._api
 
     async def _async_setup(self) -> None:
         """Fetch users once on startup."""
@@ -415,6 +436,20 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
                             backdrop_path = f"/api/jellyha/image/{self.entry.entry_id}/{item_id}/Backdrop?tag={backdrop_tag}"
                             s["jellyha_backdrop_url"] = async_sign_path(self.hass, backdrop_path, expiration)
                             self._url_cache[backdrop_cache_key] = (s["jellyha_backdrop_url"], now)
+                    
+                    # Cache series poster URL for episodes
+                    if item.get("Type") == "Episode":
+                        series_id = item.get("SeriesId")
+                        series_tag = item.get("SeriesPrimaryImageTag")
+                        if series_id and series_tag:
+                            series_cache_key = (series_id, "Primary", series_tag)
+                            cached = self._url_cache.get(series_cache_key)
+                            if cached and (now - cached[1]) < _URL_CACHE_TTL:
+                                s["jellyha_series_poster_url"] = cached[0]
+                            else:
+                                series_path = f"/api/jellyha/image/{self.entry.entry_id}/{series_id}/Primary?tag={series_tag}"
+                                s["jellyha_series_poster_url"] = async_sign_path(self.hass, series_path, expiration)
+                                self._url_cache[series_cache_key] = (s["jellyha_series_poster_url"], now)
 
     async def _handle_ws_session_update(self, sessions: list[dict[str, Any]]) -> None:
         """Handle session updates from WebSocket."""

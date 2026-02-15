@@ -424,7 +424,7 @@ class JellyfinApiClient:
 
     async def session_control(self, session_id: str, command: str) -> bool:
         """Send a control command to a playback session."""
-        # Command: Pause, Unpause, TogglePause, Stop
+        # Command: Pause, Unpause, TogglePause, Stop, NextTrack, PreviousTrack
         endpoint = f"/Sessions/{session_id}/Playing/{command}"
         try:
             await self._request("POST", endpoint)
@@ -442,6 +442,26 @@ class JellyfinApiClient:
             return True
         except JellyfinApiError as err:
             _LOGGER.error("Failed to seek session: %s", err)
+            return False
+
+    async def session_general_command(
+        self, session_id: str, command: str, arguments: dict[str, str] | None = None
+    ) -> bool:
+        """Send a general command to a session.
+
+        Supported commands: SetVolume, Mute, Unmute, ToggleMute, etc.
+        For SetVolume, arguments should be {"Volume": "<0-100>"}.
+        API: POST /Sessions/{sessionId}/Command
+        """
+        endpoint = f"/Sessions/{session_id}/Command"
+        body: dict[str, Any] = {"Name": command}
+        if arguments:
+            body["Arguments"] = arguments
+        try:
+            await self._request("POST", endpoint, json=body)
+            return True
+        except JellyfinApiError as err:
+            _LOGGER.error("Failed to send general command %s: %s", command, err)
             return False
 
     async def logout(self) -> None:

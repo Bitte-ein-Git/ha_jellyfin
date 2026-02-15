@@ -64,7 +64,12 @@ export class JellyHAMediaItem extends LitElement {
             <div class="poster-inner">
               <img
                 class="poster"
-                src="${addImageParams(item.poster_url, 160)}"
+                src="${addImageParams(
+          this.config.use_series_image && item.series_poster_url
+            ? item.series_poster_url
+            : item.poster_url,
+          160
+        )}"
                 alt="${item.name}"
                 width="80"
                 height="120"
@@ -183,7 +188,12 @@ export class JellyHAMediaItem extends LitElement {
           <div class="poster-inner">
             <img
               class="poster"
-              src="${addImageParams(item.poster_url, 300)}"
+              src="${addImageParams(
+          this.config.use_series_image && item.series_poster_url
+            ? item.series_poster_url
+            : item.poster_url,
+          300
+        )}"
               alt="${item.name}"
               width="140"
               height="210"

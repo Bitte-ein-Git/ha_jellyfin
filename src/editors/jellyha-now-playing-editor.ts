@@ -150,6 +150,14 @@ export class JellyHANowPlayingEditor extends LitElement {
           ></ha-switch>
           <span>${localize(lang, 'editor.show_background')}</span>
         </div>
+
+        <div class="checkbox-row">
+          <ha-switch
+            .checked=${this._config.use_series_image === true}
+            @change=${this._useSeriesImageChanged}
+          ></ha-switch>
+          <span>${localize(lang, 'editor.use_series_image')}</span>
+        </div>
       </div>
     `;
   }
@@ -202,6 +210,11 @@ export class JellyHANowPlayingEditor extends LitElement {
   private _showBackgroundChanged(e: Event): void {
     const target = e.target as HTMLInputElement;
     this._updateConfig('show_background', target.checked);
+  }
+
+  private _useSeriesImageChanged(e: Event): void {
+    const target = e.target as HTMLInputElement;
+    this._updateConfig('use_series_image', target.checked);
   }
 
   private _updateConfig(key: string, value: unknown): void {

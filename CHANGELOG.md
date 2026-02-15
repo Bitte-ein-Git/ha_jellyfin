@@ -5,6 +5,24 @@ All notable changes to JellyHA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-15
+
+### Added
+- **Per-User Media Player Entities**: Each Jellyfin user now gets their own `media_player` entity (e.g., `media_player.jellyha_username`)
+  - Full transport controls: Play, Pause, Stop, Seek, Next Track, Previous Track
+  - Volume controls: Set volume level and Mute/Unmute
+  - Rich media metadata: Title, series/season/episode info, poster images, duration, position
+  - Real-time state updates via WebSocket or polling
+  - Automatic session priority (prefers playing over paused sessions)
+- **Series Cover Image Option**: Added option to display series posters instead of episode thumbnails
+  - Available for **Now Playing card** (all episodes)
+  - Available for **Library Card** (Next Up view)
+- Enhanced session control API with `session_general_command` for volume and other general commands
+
+### Changed
+- Existing user sensors (`sensor.jellyha_now_playing_*`) remain unchanged for backwards compatibility
+- Library Browser media_player remains separate and unchanged
+
 ## [1.0.5] - 2026-02-15
 
 ### Fixed

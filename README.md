@@ -18,7 +18,8 @@ Jellyfin for Home Assistant
 
 - 🎬 Display movies and TV shows from your library
 - 📺 Cast media directly to Chromecast (Gen 1 supported)
-- ⏯️ Full playback control: Play, Pause, Stop, Seek
+- ⏯️ Full playback control: Play, Pause, Stop, Seek, Next/Previous Track
+- 🎮 **Per-user media players** with transport and volume controls
 - ⏭️ "Next Up" support to resume TV shows
 - 🎨 Three layouts: Carousel, Grid, List
 - 🌙 Automatic dark/light theme adaptation
@@ -46,14 +47,19 @@ Before installing JellyHA, ensure you have **HACS (Home Assistant Community Stor
 
 Please follow the [official HACS installation guide](https://www.hacs.xyz/docs/use/download/download/) to install HACS on your Home Assistant instance.
 
+**Option A: Using the Quick Link**
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=zupancicmarko&repository=jellyha&category=Integration)
+
+**Option B: Manual Search**
+
 1. Open HACS in Home Assistant
-2. Go to **⋮** → **Custom repositories**
-3. Add repository URL: `https://github.com/zupancicmarko/JellyHA`
-4. Select Type: **Integration**
-5. Click **ADD**
-6. Search for **JellyHA** in HACS Integrations
-7. Click **Download**
-8. **Restart Home Assistant**
+2. In the search bar, type **JellyHA**
+
+**Then:**
+
+3. Click the **JellyHA** integration and click **Download**
+4. **Restart Home Assistant**
 
 #### Manual Installation
 
@@ -158,6 +164,7 @@ max_pages: 5
 | `status_filter` | string | `all` | Filter Watch Status: `all`, `unwatched`, `watched` |
 | `filter_favorites` | boolean | `false` | Filter Favorites (Show only favorite items) |
 | `filter_newly_added` | boolean | `false` | Filter New Items (Show only new items) |
+| `use_series_image` | boolean | `false` | (Next Up only) Show series cover instead of episode thumbnail |
 
 > **⚠️ Performance Note:** Using **Auto Swipe** with a large number of items may impact performance on some devices. We recommend limiting the number of items for the best experience.
 
@@ -188,6 +195,7 @@ show_background: true
 | `show_ratings` | boolean | `true` | Show community rating |
 | `show_runtime` | boolean | `true` | Show runtime duration |
 | `show_year` | boolean | `true` | Show release year |
+| `use_series_image` | boolean | `false` | Show series cover instead of episode thumbnail |
 
 
 ## Sensors
@@ -223,8 +231,67 @@ JellyHA provides several sensors to monitor your Jellyfin server and library. Al
 ### User Sensors
 
 | Entity ID Prefix | Description | State | Key Attributes |
-|-----------|-------------|-------|------------|
+|-----------|-------------|-------|----------------|
 | `sensor.jellyha_now_playing_[user]` | Real-time monitoring for specific user | `playing`, `paused`, `idle` | `title`, `series_title`, `season`, `episode`, `progress_percent`, `image_url`, `media_type`, `client`, `device_name` |
+
+
+## Media Players
+
+JellyHA provides two types of media_player entities:
+
+### Per-User Media Players
+
+| Entity ID Pattern | Description | Supported Features |
+|-----------|-------------|--------------------|
+| `media_player.jellyha_[username]` | Tracks and controls each user's active playback session | **Transport:** Play, Pause, Stop, Seek, Next Track, Previous Track<br>**Volume:** Set Volume, Mute/Unmute<br>**Metadata:** Title, Series/Season/Episode, Image, Duration, Position |
+
+**State Mapping:**
+- `idle` — No active playback session
+- `playing` — Media is currently playing
+- `paused` — Media is paused
+
+**Key Attributes:**
+- `media_title` — Current media title
+- `media_series_title` — TV series name (episodes only)
+- `media_season` — Season number (episodes only)
+- `media_episode` — Episode number (episodes only)
+- `media_content_type` — `tvshow`, `movie`, `music`, or `video`
+- `media_image_url` — Poster image URL
+- `media_duration` — Total duration in seconds
+- `media_position` — Current position in seconds
+- `session_id` — Active Jellyfin session ID
+- `device_name` — Client device name
+- `client` — Client application name
+
+**Example Usage:**
+```yaml
+# Pause playback
+service: media_player.media_pause
+target:
+  entity_id: media_player.jellyha_admin
+
+# Seek to 5 minutes
+service: media_player.media_seek
+target:
+  entity_id: media_player.jellyha_admin
+data:
+  seek_position: 300
+
+# Set volume to 50%
+service: media_player.volume_set
+target:
+  entity_id: media_player.jellyha_admin
+data:
+  volume_level: 0.5
+```
+
+### Library Browser Media Player
+
+| Entity ID | Description | Supported Features |
+|-----------|-------------|--------------------|
+| `media_player.jellyha_library_browser` | Browse and search your Jellyfin library | Browse Media, Play Media, Search Media |
+
+This entity integrates with Home Assistant's Media Browser and allows you to explore your Jellyfin libraries directly from the Media panel.
 
 
 ## Services
