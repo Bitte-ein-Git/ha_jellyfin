@@ -102,11 +102,18 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             server_info = await self._api.validate_connection()
             self._server_name = server_info.get("ServerName", "Jellyfin")
             self._server_version = server_info.get("Version")
-            _LOGGER.debug("Connected to Jellyfin server: %s (v%s)", self._server_name, self._server_version)
+            _LOGGER.info(
+                "Connected to Jellyfin server '%s' version %s at %s",
+                self._server_name,
+                self._server_version,
+                self.entry.data[CONF_SERVER_URL],
+            )
         except JellyfinAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except JellyfinConnectionError as err:
             raise UpdateFailed(f"Failed to connect to Jellyfin: {err}") from err
+        except JellyfinApiError as err:
+            raise UpdateFailed(f"Error connecting to Jellyfin: {err}") from err
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from Jellyfin API."""
@@ -117,6 +124,12 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         user_id = self.entry.data[CONF_USER_ID]
         libraries = self.entry.data.get(CONF_LIBRARIES, [])
+
+        _LOGGER.debug(
+            "Fetching library items for user_id=%s, libraries=%s",
+            user_id,
+            libraries if libraries else "(all)",
+        )
 
         try:
             raw_items = await self._api.get_library_items(
@@ -205,8 +218,16 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 learn_more_url="https://github.com/zupancicmarko/jellyha",
             )
             raise ConfigEntryAuthFailed(str(err)) from err
+        except JellyfinConnectionError as err:
+            raise UpdateFailed(
+                f"Cannot reach Jellyfin server at "
+                f"{self.entry.data[CONF_SERVER_URL]}: {err}"
+            ) from err
         except JellyfinApiError as err:
-            raise UpdateFailed(f"Error fetching data: {err}") from err
+            raise UpdateFailed(
+                f"Jellyfin API error (server version "
+                f"{self._server_version or 'unknown'}): {err}"
+            ) from err
 
     async def _compute_data_hash(self, items: list[dict[str, Any]], next_up_items: list[dict[str, Any]] = None) -> str:
         """Compute a hash of item data to detect changes (runs in executor)."""

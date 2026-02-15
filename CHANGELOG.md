@@ -5,6 +5,16 @@ All notable changes to JellyHA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2026-02-15
+
+### Fixed
+- Fixed `400 Bad Request` during setup when selecting multiple libraries (ParentId now fetched per library).
+- Improved API error reporting by logging response bodies for 4xx responses.
+- Optimized API request logic by stopping retries for non-transient 4xx client errors.
+
+### Added
+- Enhanced setup diagnostics by logging server name and version at INFO level.
+
 ## [1.0.4] - 2026-02-14
 
 ### Fixed

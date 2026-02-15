@@ -82,6 +82,7 @@ class JellyfinApiClient:
     ) -> Any:
         """Make an API request with retry logic."""
         url = urljoin(self._server_url + "/", endpoint.lstrip("/"))
+        _LOGGER.debug("API request: %s %s", method, url)
 
         for attempt in range(MAX_RETRIES):
             try:
@@ -96,14 +97,40 @@ class JellyfinApiClient:
                         raise JellyfinAuthError("Invalid API key or unauthorized")
                     if response.status == 403:
                         raise JellyfinAuthError("Access forbidden")
-                    response.raise_for_status()
-                    
+
+                    # On non-2xx responses, capture the body before raising
+                    if response.status >= 400:
+                        try:
+                            body = await response.text()
+                        except Exception:  # pylint: disable=broad-except
+                            body = "<unreadable>"
+                        _LOGGER.warning(
+                            "Jellyfin API error %d for %s %s — response: %s",
+                            response.status,
+                            method,
+                            url,
+                            body[:500],
+                        )
+                        # 4xx = client error (bad request, not found, etc.)
+                        # Do NOT retry these — the request itself is wrong.
+                        # Exception: 408 (timeout) and 429 (rate limit) are transient.
+                        if 400 <= response.status < 500 and response.status not in (408, 429):
+                            raise JellyfinApiError(
+                                f"Jellyfin rejected request ({response.status}): "
+                                f"{body[:200]}"
+                            )
+                        # 5xx or 408/429 — let raise_for_status throw so retry logic handles it
+                        response.raise_for_status()
+
                     # Handle 204 No Content responses (no body to parse)
                     if response.status == 204:
                         return None
                     
                     return await response.json()
 
+            except (JellyfinAuthError, JellyfinApiError):
+                # Auth errors and client errors should not be retried
+                raise
             except RuntimeError as err:
                  if "Session is closed" in str(err):
                      raise JellyfinConnectionError("Session is closed") from err
@@ -229,7 +256,24 @@ class JellyfinApiClient:
              params["IndexNumber"] = str(episode)
 
         if library_ids:
-            params["ParentId"] = ",".join(library_ids)
+            # ParentId only accepts a single GUID, so fetch each library
+            # separately and merge deduplicated results.
+            if len(library_ids) == 1:
+                params["ParentId"] = library_ids[0]
+            else:
+                all_items: list[dict[str, Any]] = []
+                seen_ids: set[str] = set()
+                for lib_id in library_ids:
+                    lib_params = {**params, "ParentId": lib_id}
+                    result = await self._request(
+                        "GET", f"/Users/{user_id}/Items", params=lib_params
+                    )
+                    for item in result.get("Items", []):
+                        item_id = item.get("Id")
+                        if item_id and item_id not in seen_ids:
+                            seen_ids.add(item_id)
+                            all_items.append(item)
+                return all_items
 
         result = await self._request("GET", f"/Users/{user_id}/Items", params=params)
         return result.get("Items", [])
