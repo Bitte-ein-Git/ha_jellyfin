@@ -229,6 +229,20 @@ class JellyHAUserMediaPlayer(
                 
         return None
 
+    def _get_chapter_info(self, session: dict[str, Any]) -> tuple[int, int, str] | None:
+        """Calculate current chapter info."""
+        chapters = session.get("jellyha_chapters", [])
+        if not chapters:
+            return None
+        position_ticks = session.get("PlayState", {}).get("PositionTicks", 0)
+        current_idx = 0
+        for i, chap in enumerate(chapters):
+            if chap.get("StartPositionTicks", 0) <= position_ticks:
+                current_idx = i
+            else:
+                break
+        return current_idx + 1, len(chapters), chapters[current_idx].get("Name", "")
+
     @property
     def state(self) -> MediaPlayerState:
         """Return the current state of the media player."""
@@ -380,6 +394,20 @@ class JellyHAUserMediaPlayer(
         return session.get("PlayState", {}).get("IsMuted", False)
 
     @property
+    def app_name(self) -> str | None:
+        """Return the current app name, inject chapter if present."""
+        session = self._get_active_session()
+        if not session:
+            return None
+        chap_info = self._get_chapter_info(session)
+        if chap_info:
+            c_idx, c_total, c_name = chap_info
+            lang = self.hass.config.language
+            word = "Kapitel" if lang.startswith("de") else "Chapter"
+            return f"{word}: {c_idx}/{c_total} — {c_name}"
+        return session.get("Client")
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return additional state attributes."""
         session = self._get_active_session()
@@ -397,6 +425,11 @@ class JellyHAUserMediaPlayer(
         attrs["item_id"] = item.get("Id")
         attrs["media_type"] = item.get("Type")
         attrs["library_name"] = item.get("CollectionName")
+        
+        chap_info = self._get_chapter_info(session)
+        if chap_info:
+            attrs["chapter_no"] = f"{chap_info[0]}/{chap_info[1]}"
+            attrs["chapter_name"] = chap_info[2]
 
         position_ticks = play_state.get("PositionTicks", 0)
         duration_ticks = item.get("RunTimeTicks", 0)
@@ -441,19 +474,44 @@ class JellyHAUserMediaPlayer(
         await self.coordinator.api.session_seek(session["Id"], position_ticks)
 
     async def async_media_next_track(self) -> None:
-        """Send next track command to session."""
+        """Send next track command to session or skip chapter."""
         session = self._get_active_session()
         if not session:
             _LOGGER.debug("No active session for user %s, cannot skip", self._username)
             return
+        chapters = session.get("jellyha_chapters", [])
+        if chapters:
+            position_ticks = session.get("PlayState", {}).get("PositionTicks", 0)
+            for chap in chapters:
+                if chap.get("StartPositionTicks", 0) > position_ticks:
+                    await self.coordinator.api.session_seek(session["Id"], chap.get("StartPositionTicks", 0))
+                    return
         await self.coordinator.api.session_control(session["Id"], "NextTrack")
 
     async def async_media_previous_track(self) -> None:
-        """Send previous track command to session."""
+        """Send previous track command to session or rewind chapter."""
         session = self._get_active_session()
         if not session:
             _LOGGER.debug("No active session for user %s, cannot go back", self._username)
             return
+        chapters = session.get("jellyha_chapters", [])
+        if chapters:
+            position_ticks = session.get("PlayState", {}).get("PositionTicks", 0)
+            current_idx = 0
+            for i, chap in enumerate(chapters):
+                if chap.get("StartPositionTicks", 0) <= position_ticks:
+                    current_idx = i
+            
+            curr_start = chapters[current_idx].get("StartPositionTicks", 0)
+            # Jump back to start if 5+ seconds in
+            if position_ticks - curr_start > 50000000:
+                await self.coordinator.api.session_seek(session["Id"], curr_start)
+                return
+            elif current_idx > 0:
+                prev_start = chapters[current_idx - 1].get("StartPositionTicks", 0)
+                await self.coordinator.api.session_seek(session["Id"], prev_start)
+                return
+                
         await self.coordinator.api.session_control(session["Id"], "PreviousTrack")
 
     async def async_set_volume_level(self, volume: float) -> None:

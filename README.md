@@ -17,7 +17,7 @@ Jellyfin for Home Assistant
 ## Features
 
 - 🎵 Metadata for currently playing music (Song, Artist, Album, Timestamps, Coverart)
-
+- 🔖 **Chapter support** with localized metadata (`app_name`, `chapter_no`, `chapter_name`) and seamless chapter skip controls
 - 🎬 Display movies and TV shows from your library
 - 📺 Cast media directly to Chromecast (Gen 1 supported)
 - ⏯️ Full playback control: Play, Pause, Stop, Seek, Next/Previous Track
