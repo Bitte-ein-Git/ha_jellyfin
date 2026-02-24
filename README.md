@@ -17,7 +17,7 @@ Jellyfin for Home Assistant
 ## Features
 
 - 🎵 Metadata for currently playing music (Song, Artist, Album, Timestamps, Coverart)
-
+- 🔖 **Chapter support** with localized metadata (`app_name`, `chapter_no`, `chapter_name`) and seamless chapter skip controls
 - 🎬 Display movies and TV shows from your library
 - 📺 Cast media directly to Chromecast (Gen 1 supported)
 - ⏯️ Full playback control: Play, Pause, Stop, Seek, Next/Previous Track
@@ -51,7 +51,7 @@ Please follow the [official HACS installation guide](https://www.hacs.xyz/docs/u
 
 **Option A: Using the Quick Link**
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://ha-link.heyfordy.de/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Bitte-ein-Git&repository=ha_jellyfin&category=Integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://ha-link.heyfordy.dev/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Bitte-ein-Git&repository=ha_jellyfin&category=Integration)
 
 **Option B: Manual Search**
 
@@ -575,5 +575,5 @@ This integration is provided as a neutral interface for your private media libra
 [hacs-url]: https://github.com/hacs/integration
 [release-badge]: https://img.shields.io/github/v/release/Bitte-ein-Git/ha_jellyfin
 [release-url]: https://github.com/Bitte-ein-Git/ha_jellyfin/releases
-[my-ha-badge]: https://ha-link.heyfordy.de/badges/config_flow_start.svg
+[my-ha-badge]: https://ha-link.heyfordy.dev/badges/config_flow_start.svg
 [my-ha-url]: https://my.home-assistant.io/redirect/config_flow_start?domain=jellyha

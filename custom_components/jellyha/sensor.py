@@ -198,7 +198,7 @@ class JellyHAUnwatchedCountSensor(JellyHABaseSensor):
         return {
             "movies": len([i for i in unwatched if i.get("type") == "Movie"]),
             "series": len([i for i in unwatched if i.get("type") == "Series"]),
-            "episodes": unwwatched_episodes,
+            "episodes": unwatched_episodes,
         }
 
 
@@ -460,6 +460,15 @@ class JellyHAUserSensor(CoordinatorEntity[JellyHASessionCoordinator], SensorEnti
 
             attributes["image_url"] = session.get("jellyha_poster_url")
             attributes["backdrop_url"] = session.get("jellyha_backdrop_url")
+
+            chapters = session.get("jellyha_chapters", [])
+            if chapters:
+                current_idx = 0
+                for i, chap in enumerate(chapters):
+                    if chap.get("StartPositionTicks", 0) <= position_ticks:
+                        current_idx = i
+                attributes["chapter_no"] = f"{current_idx + 1}/{len(chapters)}"
+                attributes["chapter_name"] = chapters[current_idx].get("Name", "")
 
         return attributes
 

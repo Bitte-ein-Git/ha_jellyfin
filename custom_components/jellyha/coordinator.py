@@ -361,6 +361,8 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         self._device_id: str | None = None
         # Cache signed URLs by (item_id, image_type, tag) -> (url, monotonic timestamp)
         self._url_cache: dict[tuple[str, str, str], tuple[str, float]] = {}
+        # Local cache for chapters
+        self._item_cache: dict[str, list[dict[str, Any]]] = {}
 
         if self._ws_client:
             self._ws_client.set_on_session_update(self._handle_ws_session_update)
@@ -381,6 +383,20 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         except JellyfinApiError as err:
             _LOGGER.error("Failed to fetch users: %s", err)
 
+    async def _async_enrich_sessions_data(self, sessions: list[dict[str, Any]]) -> None:
+        """Fetch missing item details like chapters."""
+        for s in sessions:
+            if "NowPlayingItem" in s:
+                item_id = s["NowPlayingItem"].get("Id")
+                if item_id:
+                    if item_id not in self._item_cache:
+                        try:
+                            full_item = await self._api.get_item(s.get("UserId"), item_id)
+                            self._item_cache[item_id] = full_item.get("Chapters", [])
+                        except Exception:
+                            self._item_cache[item_id] = []
+                    s["jellyha_chapters"] = self._item_cache[item_id]
+
     async def _async_update_data(self) -> list[dict[str, Any]]:
         """Fetch sessions from Jellyfin API."""
         if not self.users:
@@ -388,6 +404,7 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
 
         try:
             sessions = await self._api.get_sessions()
+            await self._async_enrich_sessions_data(sessions)
             self._enrich_sessions(sessions)
             
             # Fire events even during polling to ensure automation triggers work
@@ -454,6 +471,8 @@ class JellyHASessionCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
     async def _handle_ws_session_update(self, sessions: list[dict[str, Any]]) -> None:
         """Handle session updates from WebSocket."""
         _LOGGER.debug("Coordinator received %d sessions from WS", len(sessions))
+        
+        await self._async_enrich_sessions_data(sessions)
         
         # Enrich with signed URLs (same as polling path)
         self._enrich_sessions(sessions)
