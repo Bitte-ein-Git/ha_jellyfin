@@ -215,7 +215,7 @@ class JellyHALibraryCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 is_fixable=False,
                 severity=IssueSeverity.ERROR,
                 translation_key="invalid_auth",
-                learn_more_url="https://github.com/zupancicmarko/jellyha",
+                learn_more_url="https://github.com/Bitte-ein-Git/ha_jellyfin",
             )
             raise ConfigEntryAuthFailed(str(err)) from err
         except JellyfinConnectionError as err:

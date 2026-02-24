@@ -29,7 +29,7 @@ async def async_get_media_source(hass: HomeAssistant) -> MediaSource:
 class JellyHAMediaSource(MediaSource):
     """Provide Jellyfin media libraries as a media source."""
 
-    name: str = "JellyHA"
+    name: str = "⏯️• Jellyfin+"
 
     def __init__(self, hass: HomeAssistant) -> None:
         """Initialize."""
@@ -139,7 +139,7 @@ class JellyHAMediaSource(MediaSource):
             identifier="",
             media_class=MediaClass.DIRECTORY,
             media_content_type="root",
-            title="JellyHA",
+            title="⏯️• Jellyfin+",
             can_play=False,
             can_expand=True,
             children=children,

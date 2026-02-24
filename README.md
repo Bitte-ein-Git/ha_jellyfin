@@ -1,4 +1,4 @@
-# JellyHA
+# ⏯️• Jellyfin+
 
 [![HACS][hacs-badge]][hacs-url]
 [![GitHub Release][release-badge]][release-url]
@@ -15,6 +15,8 @@ Jellyfin for Home Assistant
 </div>
 
 ## Features
+
+- 🎵 Metadata for currently playing music (Song, Artist, Album, Timestamps, Coverart)
 
 - 🎬 Display movies and TV shows from your library
 - 📺 Cast media directly to Chromecast (Gen 1 supported)
@@ -37,7 +39,7 @@ Jellyfin for Home Assistant
 
 ## Installation
 
-JellyHA requires **two installation steps**: installing the integration and adding the dashboard card resource.
+⏯️• Jellyfin+ requires **two installation steps**: installing the integration and adding the dashboard card resource.
 
 ### Step 1: Install the Integration
 
@@ -49,16 +51,16 @@ Please follow the [official HACS installation guide](https://www.hacs.xyz/docs/u
 
 **Option A: Using the Quick Link**
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=zupancicmarko&repository=jellyha&category=Integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://ha-link.heyfordy.de/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Bitte-ein-Git&repository=ha_jellyfin&category=Integration)
 
 **Option B: Manual Search**
 
 1. Open HACS in Home Assistant
-2. In the search bar, type **JellyHA**
+2. In the search bar, type **⏯️• Jellyfin+**
 
 **Then:**
 
-3. Click the **JellyHA** integration and click **Download**
+3. Click the **⏯️• Jellyfin+** integration and click **Download**
 4. **Restart Home Assistant**
 
 #### Manual Installation
@@ -93,7 +95,7 @@ Then continue to step 3. and 4. below.
 ### Manually start the integration setup
 
 1. Go to **Settings** → **Devices & Services** → **Add Integration**
-2. Search for "JellyHA"
+2. Search for "⏯️• Jellyfin+"
 3. Enter your Jellyfin server URL and select authentication method (**Username/Password** or **API Key**)
 4. Enter your Jellyfin API key or credentials
 5. Select the user and libraries to monitor
@@ -335,7 +337,7 @@ The `sensor.jellyha_websocket` sensor shows the current connection status (`conn
 JellyHA integrates directly with the Home Assistant Media Browser. You can explore your Jellyfin libraries, play media on supported players, and even stream directly to your browser, all without leaving Home Assistant.
 
 1. Go to **Media** in the sidebar.
-2. Select **JellyHA**.
+2. Select **⏯️• Jellyfin+**.
 3. Browse your Movies, Series, and Music collections.
 
 
@@ -553,7 +555,7 @@ This usually indicates a duplicate command registration. Ensure you are running 
 
 ## Support
 
-- [Report an issue](https://github.com/zupancicmarko/jellyha/issues)
+- [Report an issue](https://github.com/Bitte-ein-Git/ha_jellyfin/issues)
 - [Home Assistant Community](https://community.home-assistant.io/)
 
 ## Acknowledgments
@@ -571,7 +573,7 @@ This integration is provided as a neutral interface for your private media libra
 
 [hacs-badge]: https://img.shields.io/badge/HACS-Custom-orange.svg
 [hacs-url]: https://github.com/hacs/integration
-[release-badge]: https://img.shields.io/github/v/release/zupancicmarko/jellyha
-[release-url]: https://github.com/zupancicmarko/jellyha/releases
-[my-ha-badge]: https://my.home-assistant.io/badges/config_flow_start.svg
+[release-badge]: https://img.shields.io/github/v/release/Bitte-ein-Git/ha_jellyfin
+[release-url]: https://github.com/Bitte-ein-Git/ha_jellyfin/releases
+[my-ha-badge]: https://ha-link.heyfordy.de/badges/config_flow_start.svg
 [my-ha-url]: https://my.home-assistant.io/redirect/config_flow_start?domain=jellyha

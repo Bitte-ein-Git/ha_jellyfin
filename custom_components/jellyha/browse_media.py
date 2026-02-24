@@ -70,7 +70,7 @@ async def async_browse_media(
 def _build_root_menu(entry_id: str) -> BrowseMedia:
     """Build root browse menu."""
     return BrowseMedia(
-        title="JellyHA",
+        title="⏯️• Jellyfin+",
         media_class=MediaClass.DIRECTORY,
         media_content_id=build_item_id("root"),
         media_content_type=MediaType.CHANNELS,

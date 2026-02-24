@@ -1,7 +1,8 @@
 {
   "domain": "jellyha",
-  "name": "JellyHA",
+  "name": "⏯️• Jellyfin+",
   "codeowners": [
+    "@Bitte-ein-Git",
     "@zupancicmarko"
   ],
   "config_flow": true,
@@ -9,13 +10,13 @@
     "media_source",
     "http"
   ],
-  "documentation": "https://github.com/zupancicmarko/jellyha",
+  "documentation": "https://github.com/Bitte-ein-Git/ha_jellyfin",
   "integration_type": "service",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/zupancicmarko/jellyha/issues",
+  "issue_tracker": "https://github.com/Bitte-ein-Git/ha_jellyfin/issues",
   "requirements": [
     "aiohttp>=3.8.0",
     "pychromecast"
   ],
-  "version": "1.1.0"
+  "version": "1.0.0-dev"
 }

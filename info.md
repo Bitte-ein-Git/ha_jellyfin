@@ -1,8 +1,8 @@
-# JellyHA
+# ⏯️• Jellyfin+
 
 **Jellyfin for Home Assistant**
 
-![Grid View](https://github.com/zupancicmarko/JellyHA/raw/main/docs/JellyHA-Library-Grid.png)
+![Grid View](https://github.com/Bitte-ein-Git/ha_jellyfin/raw/main/docs/JellyHA-Library-Grid.png)
 
 JellyHA integrates your Jellyfin media server directly into Home Assistant.
 
@@ -16,10 +16,10 @@ JellyHA integrates your Jellyfin media server directly into Home Assistant.
 ### Installation
 1. Install via HACS (you are here!).
 2. **Restart Home Assistant**.
-3. Go to **Settings** > **Devices & Services** > **Add Integration** > "JellyHA".
+3. Go to **Settings** > **Devices & Services** > **Add Integration** > "⏯️• Jellyfin+".
 
 **Important:** You must also add the dashboard resource:
 - URL: `/jellyha/jellyha-cards.js`
 - Type: `JavaScript Module`
 
-[Read the full documentation on GitHub](https://github.com/zupancicmarko/jellyha)
+[Read the full documentation on GitHub](https://github.com/Bitte-ein-Git/ha_jellyfin)

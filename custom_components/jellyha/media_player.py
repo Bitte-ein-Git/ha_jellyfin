@@ -42,7 +42,6 @@ async def async_setup_entry(
         JellyHAMediaPlayer(coordinator, entry, device_name),
     ]
 
-    # Create a media player for each Jellyfin user
     if session_coordinator.users:
         for user_id, username in session_coordinator.users.items():
             entities.append(
@@ -78,7 +77,6 @@ class JellyHAMediaPlayer(CoordinatorEntity[JellyHALibraryCoordinator], MediaPlay
         self._entry = entry
         self._device_name = device_name
         self._attr_unique_id = f"{device_name}_media_browser"
-        # self.entity_id = f"media_player.{device_name}_browser"
         self._current_item: dict[str, Any] | None = None
 
     @property
@@ -127,14 +125,12 @@ class JellyHAMediaPlayer(CoordinatorEntity[JellyHALibraryCoordinator], MediaPlay
         """Play media from Jellyfin."""
         _LOGGER.debug("Play media requested: type=%s, id=%s", media_type, media_id)
 
-        # Parse the item ID
         category, item_id = parse_item_id(media_id)
 
         if category != "item" or not item_id:
             _LOGGER.warning("Cannot play: invalid media_id format: %s", media_id)
             return
 
-        # Find the item in coordinator data
         items = self.coordinator.data.get("items", []) if self.coordinator.data else []
         item = next((i for i in items if i.get("id") == item_id), None)
 
@@ -144,8 +140,6 @@ class JellyHAMediaPlayer(CoordinatorEntity[JellyHALibraryCoordinator], MediaPlay
 
         self._current_item = item
 
-        # Call the play_on_chromecast service if a default device is configured
-        # For now, just log the play request - user can configure card action
         _LOGGER.info(
             "Play request for '%s' (ID: %s). Use card or call jellyha.play_on_chromecast service.",
             item.get("name"),
@@ -168,14 +162,7 @@ class JellyHAMediaPlayer(CoordinatorEntity[JellyHALibraryCoordinator], MediaPlay
 class JellyHAUserMediaPlayer(
     CoordinatorEntity[JellyHASessionCoordinator], MediaPlayerEntity
 ):
-    """Media player entity tracking a Jellyfin user's active playback session.
-
-    One entity is created per Jellyfin user.  When the user is not playing
-    anything the entity reports IDLE.  During playback it exposes the
-    standard Home Assistant media_player transport controls (play, pause,
-    stop, seek, next/previous track) and volume controls by delegating to
-    the Jellyfin remote-session API.
-    """
+    """Media player entity tracking a Jellyfin user's active playback session."""
 
     _attr_has_entity_name = True
     _attr_supported_features = (
@@ -206,50 +193,41 @@ class JellyHAUserMediaPlayer(
         self._attr_unique_id = f"{entry.entry_id}_media_player_{user_id}"
         self._attr_name = f"{username}"
         self._attr_icon = "mdi:account-play"
-
-    # ------------------------------------------------------------------
-    # Device info
-    # ------------------------------------------------------------------
+        self._last_session = None
+        self._last_session_time = None
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info."""
         return get_device_info(self._entry.entry_id, self._device_name)
 
-    # ------------------------------------------------------------------
-    # Session lookup — reuses same priority logic as JellyHAUserSensor
-    # ------------------------------------------------------------------
-
     def _get_active_session(self) -> dict[str, Any] | None:
-        """Get the active session for this user with stable priority.
+        """Get the active session with 10s buffer fallback."""
+        if self.coordinator.data:
+            user_sessions = [
+                s for s in self.coordinator.data
+                if s.get("UserId") == self._user_id and "NowPlayingItem" in s
+            ]
 
-        If the user has multiple active sessions (e.g. phone + TV), prefer
-        the one that is currently playing (not paused).  Ties are broken by
-        session ID for determinism.
-        """
-        if not self.coordinator.data:
-            return None
-
-        user_sessions = [
-            s
-            for s in self.coordinator.data
-            if s.get("UserId") == self._user_id and "NowPlayingItem" in s
-        ]
-
-        if not user_sessions:
-            return None
-
-        user_sessions.sort(
-            key=lambda s: (
-                s.get("PlayState", {}).get("IsPaused", False),
-                s.get("Id", ""),
-            )
-        )
-        return user_sessions[0]
-
-    # ------------------------------------------------------------------
-    # State
-    # ------------------------------------------------------------------
+            if user_sessions:
+                user_sessions.sort(
+                    key=lambda s: (
+                        s.get("PlayState", {}).get("IsPaused", False),
+                        s.get("Id", ""),
+                    )
+                )
+                session = user_sessions[0]
+                # Cache valid session for buffer drops
+                self._last_session = session
+                self._last_session_time = dt_util.utcnow()
+                return session
+        
+        # Fallback to cached session if within 10s
+        if getattr(self, "_last_session", None) and getattr(self, "_last_session_time", None):
+            if (dt_util.utcnow() - self._last_session_time).total_seconds() < 10:
+                return self._last_session
+                
+        return None
 
     @property
     def state(self) -> MediaPlayerState:
@@ -262,10 +240,6 @@ class JellyHAUserMediaPlayer(
             return MediaPlayerState.PAUSED
 
         return MediaPlayerState.PLAYING
-
-    # ------------------------------------------------------------------
-    # Media metadata
-    # ------------------------------------------------------------------
 
     @property
     def media_content_type(self) -> MediaType | str | None:
@@ -290,6 +264,34 @@ class JellyHAUserMediaPlayer(
             return None
         item = session.get("NowPlayingItem", {})
         return item.get("Name")
+
+    @property
+    def media_artist(self) -> str | None:
+        """Return the artist of current playing media."""
+        session = self._get_active_session()
+        if not session:
+            return None
+        item = session.get("NowPlayingItem", {})
+        artists = item.get("Artists", [])
+        if artists:
+            return ", ".join(artists)
+        return item.get("AlbumArtist")
+
+    @property
+    def media_album_name(self) -> str | None:
+        """Return the album name of current playing media."""
+        session = self._get_active_session()
+        if not session:
+            return None
+        return session.get("NowPlayingItem", {}).get("Album")
+
+    @property
+    def media_album_artist(self) -> str | None:
+        """Return the album artist of current playing media."""
+        session = self._get_active_session()
+        if not session:
+            return None
+        return session.get("NowPlayingItem", {}).get("AlbumArtist")
 
     @property
     def media_series_title(self) -> str | None:
@@ -355,40 +357,18 @@ class JellyHAUserMediaPlayer(
 
     @property
     def media_position_updated_at(self) -> datetime | None:
-        """Return when position was last updated.
-
-        HA uses this together with media_position to interpolate the
-        current position in the UI without polling every second.
-        """
+        """Return when position was last updated."""
         session = self._get_active_session()
         if not session:
             return None
         return dt_util.utcnow()
 
-    # ------------------------------------------------------------------
-    # Volume
-    # ------------------------------------------------------------------
-
     @property
     def volume_level(self) -> float | None:
-        """Return the volume level (0.0 to 1.0).
-
-        Note: Not all Jellyfin clients report volume via the session API.
-        When unavailable this returns None.
-        """
+        """Return the volume level (0.0 to 1.0)."""
         session = self._get_active_session()
         if not session:
             return None
-        # Jellyfin stores volume as 0-100 int in TranscodingInfo or
-        # may not expose it at all depending on the client.
-        # Some clients report it in NowPlayingItem or PlayState.
-        # We check common locations:
-        transcode_info = session.get("TranscodingInfo", {})
-        if transcode_info and "AudioChannels" in transcode_info:
-            # TranscodingInfo doesn't actually contain volume — fallback
-            pass
-        # Volume is not consistently available in Jellyfin session data.
-        # Return None to indicate it's unknown.
         return None
 
     @property
@@ -398,10 +378,6 @@ class JellyHAUserMediaPlayer(
         if not session:
             return None
         return session.get("PlayState", {}).get("IsMuted", False)
-
-    # ------------------------------------------------------------------
-    # Extra state attributes
-    # ------------------------------------------------------------------
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -420,8 +396,8 @@ class JellyHAUserMediaPlayer(
         attrs["client"] = session.get("Client")
         attrs["item_id"] = item.get("Id")
         attrs["media_type"] = item.get("Type")
+        attrs["library_name"] = item.get("CollectionName")
 
-        # Progress percentage
         position_ticks = play_state.get("PositionTicks", 0)
         duration_ticks = item.get("RunTimeTicks", 0)
         if duration_ticks and duration_ticks > 0:
@@ -430,10 +406,6 @@ class JellyHAUserMediaPlayer(
             attrs["progress_percent"] = 0
 
         return attrs
-
-    # ------------------------------------------------------------------
-    # Transport controls
-    # ------------------------------------------------------------------
 
     async def async_media_play(self) -> None:
         """Send play (unpause) command to session."""
@@ -490,7 +462,6 @@ class JellyHAUserMediaPlayer(
         if not session:
             _LOGGER.debug("No active session for user %s, cannot set volume", self._username)
             return
-        # Jellyfin expects 0-100 integer
         volume_int = str(int(volume * 100))
         await self.coordinator.api.session_general_command(
             session["Id"], "SetVolume", {"Volume": volume_int}
@@ -504,4 +475,3 @@ class JellyHAUserMediaPlayer(
             return
         command = "Mute" if mute else "Unmute"
         await self.coordinator.api.session_general_command(session["Id"], command)
-

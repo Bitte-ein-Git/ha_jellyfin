@@ -13,7 +13,7 @@ def get_device_info(entry_id: str, device_name: str) -> DeviceInfo:
     
     Args:
         entry_id: The config entry ID (used as the device identifier).
-        device_name: The user-configured device name (e.g., "JellyHA").
+        device_name: The user-configured device name (e.g., "⏯️• Jellyfin+").
     
     Returns:
         DeviceInfo with consistent identifiers, manufacturer, and model.
@@ -21,7 +21,7 @@ def get_device_info(entry_id: str, device_name: str) -> DeviceInfo:
     return DeviceInfo(
         identifiers={(DOMAIN, entry_id)},
         name=device_name,
-        manufacturer="JellyHA",
+        manufacturer="⏯️• Jellyfin+",
         model="Jellyfin for Home Assistant",
         sw_version="1.0.0",
     )
